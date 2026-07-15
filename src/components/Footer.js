@@ -31,6 +31,7 @@ export function Footer({ settings }) {
               <li><a href="/nosotros" class="text-gray-400 hover:text-white text-sm transition-colors">Nosotros</a></li>
               <li><a href="/productos" class="text-gray-400 hover:text-white text-sm transition-colors">Productos</a></li>
               <li><a href="/sucursales" class="text-gray-400 hover:text-white text-sm transition-colors">Sucursales</a></li>
+              <li><a href="/venta-directa" class="text-gray-400 hover:text-white text-sm transition-colors">Venta Directa</a></li>
               <li><a href="/calidad" class="text-gray-400 hover:text-white text-sm transition-colors">Calidad</a></li>
               <li><a href="/contacto" class="text-gray-400 hover:text-white text-sm transition-colors">Contacto</a></li>
             </ul>
