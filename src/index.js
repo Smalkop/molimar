@@ -88,40 +88,51 @@ INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt
 
 let DB_INITIALIZED = false;
 
+const SETTING_UPDATES = {
+  whatsapp: '595986288006',
+  phone: '+595 986 288006',
+  address: 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9), Paraguay',
+};
+
 async function ensureDatabase(env) {
   if (DB_INITIALIZED) return;
   DB.setEnv(env);
 
+  let dbExists = true;
   try {
     await env.DB.prepare('SELECT COUNT(*) as count FROM site_settings').all();
-    DB_INITIALIZED = true;
-    return;
-  } catch {}
-
-  const schemaStmts = SCHEMA_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
-  for (const stmt of schemaStmts) {
-    try {
-      await env.DB.prepare(stmt).all();
-    } catch {}
+  } catch {
+    dbExists = false;
   }
 
-  const seedStmts = SEED_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
-  for (const stmt of seedStmts) {
-    try {
-      await env.DB.prepare(stmt).all();
-    } catch {}
-  }
-
-  try {
-    const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind('admin@molipar.com').first();
-    if (!existing) {
-      const encoder = new TextEncoder();
-      const pwdData = encoder.encode('admin123' + 'MOLIPAR_SALT_2024');
-      const pwdHash = await crypto.subtle.digest('SHA-256', pwdData);
-      const hashHex = Array.from(new Uint8Array(pwdHash)).map(b => b.toString(16).padStart(2, '0')).join('');
-      await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', hashHex, 'admin').all();
+  if (!dbExists) {
+    const schemaStmts = SCHEMA_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
+    for (const stmt of schemaStmts) {
+      try { await env.DB.prepare(stmt).all(); } catch {}
     }
-  } catch {}
+
+    const seedStmts = SEED_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
+    for (const stmt of seedStmts) {
+      try { await env.DB.prepare(stmt).all(); } catch {}
+    }
+
+    try {
+      const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind('admin@molipar.com').first();
+      if (!existing) {
+        const encoder = new TextEncoder();
+        const pwdData = encoder.encode('admin123' + 'MOLIPAR_SALT_2024');
+        const pwdHash = await crypto.subtle.digest('SHA-256', pwdData);
+        const hashHex = Array.from(new Uint8Array(pwdHash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', hashHex, 'admin').all();
+      }
+    } catch {}
+  }
+
+  for (const [key, val] of Object.entries(SETTING_UPDATES)) {
+    try {
+      await env.DB.prepare("UPDATE site_settings SET setting_value = ?, updated_at = datetime('now') WHERE setting_key = ?").bind(val, key).all();
+    } catch {}
+  }
 
   DB_INITIALIZED = true;
 }
