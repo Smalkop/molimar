@@ -3,6 +3,8 @@ export function Header({ settings, currentPath }) {
     { href: '/', label: 'Inicio' },
     { href: '/nosotros', label: 'Nosotros' },
     { href: '/productos', label: 'Productos' },
+    { href: '/sucursales', label: 'Sucursales' },
+    { href: '/venta-directa', label: 'Venta Directa' },
     { href: '/calidad', label: 'Calidad' },
     { href: '/contacto', label: 'Contacto' },
   ];
