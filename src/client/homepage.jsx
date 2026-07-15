@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,15 +22,6 @@ const cardVariants = {
     opacity: 1,
     transition: { duration: 0.45, ease: [0.25, 1, 0.5, 1] },
   },
-};
-
-const tabVariants = {
-  active: { color: '#ffffff', transition: { duration: 0.3 } },
-  inactive: { color: '#4b5563', transition: { duration: 0.3 } },
-};
-
-const indicatorVariants = {
-  idl: { x: 0, width: 'auto' },
 };
 
 function ProductCard({ product, wa }) {
@@ -75,28 +66,18 @@ function ProductCard({ product, wa }) {
 function Catalog({ harinas, fideos, whatsapp }) {
   const [activeTab, setActiveTab] = useState('harinas');
   const sectionRef = useRef(null);
-  const indicatorRef = useRef(null);
-  const tabsRef = useRef({});
 
   const primary = activeTab === 'harinas' ? harinas : fideos;
   const secondary = activeTab === 'harinas' ? fideos : harinas;
-
-  useEffect(() => {
-    const activeBtn = tabsRef.current[activeTab];
-    if (activeBtn && indicatorRef.current) {
-      const parent = activeBtn.parentElement;
-      const pRect = parent.getBoundingClientRect();
-      const bRect = activeBtn.getBoundingClientRect();
-      indicatorRef.current.style.transform = `translateX(${bRect.left - pRect.left}px)`;
-      indicatorRef.current.style.width = `${bRect.width}px`;
-    }
-  }, [activeTab]);
 
   function handleTab(tab) {
     if (tab === activeTab) return;
     setActiveTab(tab);
     sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  const TABS = ['harinas', 'fideos'];
+  const TABS_LABEL = { harinas: 'Harinas', fideos: 'Fideos' };
 
   return (
     <section id="catalog-root" ref={sectionRef} className="py-24 bg-gray-50">
@@ -111,22 +92,23 @@ function Catalog({ harinas, fideos, whatsapp }) {
 
         <div className="flex justify-center mb-12">
           <div className="relative inline-flex bg-gray-200 rounded-xl p-1">
-            <motion.div
-              ref={indicatorRef}
-              className="absolute top-1 bottom-1 left-1 bg-primary-600 rounded-lg"
-              layoutId="tab-indicator"
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            />
-            {['harinas', 'fideos'].map((tab) => (
-              <button
+            {TABS.map((tab) => (
+              <motion.button
                 key={tab}
-                ref={(el) => (tabsRef.current[tab] = el)}
                 onClick={() => handleTab(tab)}
                 className="relative z-10 px-8 py-3 text-sm font-semibold rounded-lg"
                 style={{ color: activeTab === tab ? '#fff' : '#4b5563' }}
+                whileTap={{ scale: 0.97 }}
               >
-                {tab === 'harinas' ? 'Harinas' : 'Fideos'}
-              </button>
+                {activeTab === tab && (
+                  <motion.span
+                    layoutId="tab-indicator"
+                    className="absolute inset-1 bg-primary-600 rounded-lg"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{TABS_LABEL[tab]}</span>
+              </motion.button>
             ))}
           </div>
         </div>
