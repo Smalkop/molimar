@@ -1,3 +1,14 @@
+export function sanitizeString(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .trim();
+}
+
 export function escapeHtml(str) {
   if (!str) return '';
   return String(str)
