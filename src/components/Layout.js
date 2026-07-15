@@ -64,7 +64,7 @@ export function Layout({ children, title, description, image, url, settings, cur
   ${Footer({ settings: siteSettings })}
 
   <!-- WhatsApp Floating Button -->
-  <a href="https://wa.me/${normalizeWhatsApp(siteSettings.whatsapp) || '595981659994'}?text=${encodeURIComponent('Hola, quiero consultar sobre los productos de Molipar')}"
+  <a href="https://wa.me/${normalizeWhatsApp(siteSettings.whatsapp) || '595986288006'}?text=${encodeURIComponent('Hola, quiero consultar sobre los productos de Molipar')}"
      target="_blank" rel="noopener noreferrer"
      class="whatsapp-pulse fixed bottom-6 right-6 z-30 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-110"
      aria-label="Contactar por WhatsApp">
