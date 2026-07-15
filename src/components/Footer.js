@@ -18,9 +18,8 @@ export function Footer({ settings }) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div class="animate-on-scroll">
-            <div class="flex items-center space-x-3 mb-6">
+            <div class="mb-6">
               <img src="/images/logo.png" alt="Molipar S.A." class="h-10 w-auto brightness-0 invert">
-              <span class="text-xl font-bold text-white">Molipar</span>
             </div>
             <p class="text-gray-400 text-sm leading-relaxed">${settings.company_description || 'Producción y comercialización de harinas y fideos de la más alta calidad.'}</p>
           </div>

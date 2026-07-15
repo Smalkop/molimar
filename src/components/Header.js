@@ -11,9 +11,8 @@ export function Header({ settings, currentPath }) {
     <header class="fixed top-0 left-0 right-0 z-40 bg-white/80 transition-all duration-300">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
-          <a href="/" class="flex items-center space-x-3">
+          <a href="/">
             <img src="/images/logo.png" alt="Molipar S.A." class="header-logo h-12 w-auto transition-all duration-300">
-            <span class="text-xl font-bold text-primary-700 hidden sm:block">Molipar</span>
           </a>
 
           <nav class="hidden lg:flex items-center space-x-8">
