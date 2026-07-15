@@ -1,5 +1,5 @@
 import { Layout } from '../../components/Layout.js';
-import { htmlResponse, escapeHtml } from '../../utils/html.js';
+import { htmlResponse, escapeHtml, imgUrl } from '../../utils/html.js';
 import DB from '../../services/database.js';
 
 export async function handleProducts(env, settings) {
@@ -62,17 +62,7 @@ export async function handleProducts(env, settings) {
               ${type.products.length > 0 ? type.products.map(product => `
                 <div class="card-hover bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 group">
                   <div class="relative h-56 overflow-hidden bg-gray-100">
-                    ${product.main_image
-                      ? `<img src="${product.main_image}" alt="${escapeHtml(product.name)}" class="card-image w-full h-full object-cover" loading="lazy">`
-                      : `<div class="flex items-center justify-center h-full">
-                          <div class="text-center">
-                            <svg class="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${type.type_slug === 'fideos' ? 'M4 6h16M4 12h16M4 18h16' : 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'}"/>
-                            </svg>
-                            <p class="text-gray-400 text-sm">Próximamente</p>
-                          </div>
-                        </div>`
-                    }
+                    <img src="${imgUrl(product.main_image)}" alt="${escapeHtml(product.name)}" class="card-image w-full h-full object-cover" loading="lazy">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                       <a href="https://wa.me/${settings.whatsapp || '5491145678901'}?text=${encodeURIComponent('Hola, quiero información sobre ' + product.name)}"
@@ -180,15 +170,7 @@ export async function handleProductDetail(env, settings, slug) {
           </div>
           <div class="animate-fade-right">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-2xl bg-gray-800">
-              ${product.main_image
-                ? `<img src="${product.main_image}" alt="${product.name}" class="w-full h-full object-cover card-image" data-lightbox="${product.main_image}">`
-                : `<div class="flex items-center justify-center h-80">
-                    <div class="text-center">
-                      <svg class="w-24 h-24 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="${product.type_slug === 'fideos' ? 'M4 6h16M4 12h16M4 18h16' : 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'}"/></svg>
-                      <p class="text-gray-500 text-lg">Imagen próximamente</p>
-                    </div>
-                  </div>`
-              }
+              <img src="${imgUrl(product.main_image)}" alt="${product.name}" class="w-full h-full object-cover card-image" data-lightbox="${imgUrl(product.main_image)}">
             </div>
           </div>
         </div>
@@ -211,8 +193,8 @@ export async function handleProductDetail(env, settings, slug) {
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 ${images.filter(i => i.image_type === 'gallery').map(img => `
                   <div class="aspect-w-4 aspect-h-3 rounded-xl overflow-hidden cursor-pointer card-hover">
-                    <img src="${img.medium_path || img.original_path}" alt="${img.alt_text || product.name}"
-                         class="w-full h-full object-cover" loading="lazy" data-lightbox="${img.original_path || img.medium_path}">
+                    <img src="${imgUrl(img.medium_path || img.original_path)}" alt="${img.alt_text || product.name}"
+                         class="w-full h-full object-cover" loading="lazy" data-lightbox="${imgUrl(img.original_path || img.medium_path)}">
                   </div>
                 `).join('')}
               </div>
@@ -260,7 +242,7 @@ export async function handleProductDetail(env, settings, slug) {
     children: content,
     title: product.name,
     description: product.short_description || '',
-    image: product.main_image || undefined,
+    image: imgUrl(product.main_image) || undefined,
     settings,
     currentPath: '/productos',
   }));

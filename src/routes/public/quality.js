@@ -24,7 +24,7 @@ export async function handleQuality(env, settings) {
           </div>
           <div class="animate-fade-right">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-xl">
-              <img src="/static/images/quality-process.jpg" alt="Procesos de fabricación" class="w-full h-full object-cover card-image" loading="lazy">
+              <img src="/static/images/quality-process.svg" alt="Procesos de fabricación" class="w-full h-full object-cover card-image" loading="lazy">
             </div>
           </div>
         </div>

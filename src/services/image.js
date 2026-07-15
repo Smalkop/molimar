@@ -1,11 +1,8 @@
 import STORAGE from './storage.js';
 
 const IMAGE = {
-  ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
+  ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
   MAX_SIZE: 10 * 1024 * 1024,
-  THUMB_MAX_W: 150,
-  MEDIUM_MAX_W: 600,
-  ORIGINAL_MAX_W: 1920,
 
   async process(file, productId) {
     if (!IMAGE.ALLOWED_TYPES.includes(file.type)) {
@@ -20,46 +17,35 @@ const IMAGE = {
     const buffer = await file.arrayBuffer();
 
     const paths = {
-      original: `${basePath}_original.webp`,
-      medium: `${basePath}_medium.webp`,
-      thumbnail: `${basePath}_thumbnail.webp`,
+      original: `${basePath}_original`,
+      medium: `${basePath}_medium`,
+      thumbnail: `${basePath}_thumbnail`,
     };
 
-    const webpBuffer = await IMAGE.convertToWebP(buffer);
-
-    const resized = {
-      original: await IMAGE.resize(webpBuffer, IMAGE.ORIGINAL_MAX_W),
-      medium: await IMAGE.resize(webpBuffer, IMAGE.MEDIUM_MAX_W),
-      thumbnail: await IMAGE.resize(webpBuffer, IMAGE.THUMB_MAX_W),
-    };
+    const ext = IMAGE.getExtension(file.type);
 
     await Promise.all([
-      STORAGE.upload(paths.original, resized.original, 'image/webp'),
-      STORAGE.upload(paths.medium, resized.medium, 'image/webp'),
-      STORAGE.upload(paths.thumbnail, resized.thumbnail, 'image/webp'),
+      STORAGE.upload(paths.original + ext, buffer, file.type),
+      STORAGE.upload(paths.medium + ext, buffer, file.type),
+      STORAGE.upload(paths.thumbnail + ext, buffer, file.type),
     ]);
 
-    return paths;
+    return {
+      original: paths.original + ext,
+      medium: paths.medium + ext,
+      thumbnail: paths.thumbnail + ext,
+    };
   },
 
-  async convertToWebP(buffer) {
-    try {
-      const { image } = await import('@wasm-image-processing');
-      const result = await image.encodeWebP(new Uint8Array(buffer), { quality: 85 });
-      return result.buffer;
-    } catch {
-      return buffer;
-    }
-  },
-
-  async resize(buffer, maxWidth) {
-    try {
-      const { image } = await import('@wasm-image-processing');
-      const result = await image.resize(new Uint8Array(buffer), maxWidth);
-      return result.buffer;
-    } catch {
-      return buffer;
-    }
+  getExtension(mimeType) {
+    const map = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/avif': '.avif',
+      'image/gif': '.gif',
+    };
+    return map[mimeType] || '.jpg';
   },
 
   async delete(productImages) {

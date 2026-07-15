@@ -2,7 +2,7 @@ export function seoMeta({ title, description, image, url, type = 'website' }) {
   const siteName = 'Molipar S.A.';
   const fullTitle = title ? `${title} | ${siteName}` : siteName;
   const desc = description || 'Producción y comercialización de harinas y fideos de la más alta calidad.';
-  const img = image || '/static/images/og-default.jpg';
+  const img = image || '/static/images/og-default.svg';
   const canonical = url || 'https://molipar.com';
 
   return `
@@ -55,7 +55,7 @@ export function schemaProduct(product) {
     '@type': 'Product',
     name: product.name,
     description: product.short_description || '',
-    image: product.main_image || '',
+    image: product.main_image ? '/media/' + product.main_image : '',
   };
 }
 

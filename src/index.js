@@ -140,6 +140,11 @@ export default {
       });
     }
 
+    // Media files from R2
+    if (pathname.startsWith('/media/')) {
+      return serveMedia(pathname.replace('/media/', ''), env);
+    }
+
     // Load settings for all pages
     const settings = await loadSettings(env);
 
@@ -262,6 +267,23 @@ async function generateSitemap(env, settings) {
   return new Response(xml, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
   });
+}
+
+async function serveMedia(key, env) {
+  try {
+    const object = await env.R2.get(key);
+    if (!object) {
+      return new Response(null, { status: 404 });
+    }
+    const headers = {
+      'Cache-Control': 'public, max-age=86400',
+      'ETag': object.httpEtag || '',
+      'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+    };
+    return new Response(object.body, { headers });
+  } catch {
+    return new Response(null, { status: 404 });
+  }
 }
 
 function generateRobotsTxt(env) {

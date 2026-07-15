@@ -1,5 +1,5 @@
 import { Layout } from '../../components/Layout.js';
-import { htmlResponse } from '../../utils/html.js';
+import { htmlResponse, imgUrl } from '../../utils/html.js';
 import DB from '../../services/database.js';
 
 export async function handleHome(env, settings) {
@@ -18,7 +18,7 @@ export async function handleHome(env, settings) {
     <!-- Hero Section -->
     <section class="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900">
       <div class="absolute inset-0">
-        <div class="hero-zoom absolute inset-0 bg-[url('/static/images/hero-bg.jpg')] bg-cover bg-center opacity-30"></div>
+        <div class="hero-zoom absolute inset-0 bg-[url('/static/images/hero-bg.svg')] bg-cover bg-center opacity-30"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent"></div>
       </div>
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
@@ -59,7 +59,7 @@ export async function handleHome(env, settings) {
           </div>
           <div class="animate-scale-in relative">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-2xl">
-              <img src="/static/images/about-preview.jpg" alt="Molipar S.A." class="w-full h-full object-cover card-image" loading="lazy">
+              <img src="/static/images/about-preview.svg" alt="Molipar S.A." class="w-full h-full object-cover card-image" loading="lazy">
             </div>
             <div class="absolute -bottom-6 -left-6 bg-primary-600 text-white p-8 rounded-2xl shadow-xl hidden lg:block">
               <p class="text-4xl font-bold">+50</p>
@@ -83,7 +83,7 @@ export async function handleHome(env, settings) {
           ${products.length > 0 ? products.map(product => `
             <div class="card-hover bg-white rounded-xl overflow-hidden shadow-md">
               <div class="relative h-48 overflow-hidden">
-                <img src="${product.main_image || '/static/images/placeholder.svg'}" alt="${product.name}" class="card-image w-full h-full object-cover" loading="lazy">
+                <img src="${imgUrl(product.main_image)}" alt="${product.name}" class="card-image w-full h-full object-cover" loading="lazy">
                 <span class="absolute top-3 left-3 px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">${product.type_name}</span>
               </div>
               <div class="p-5">
