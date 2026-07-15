@@ -66,6 +66,7 @@ export async function handleAdminMessages(env, user) {
     <script>
       async function viewMessage(id) {
         const res = await fetch('/admin/api/mensajes/' + id);
+        if (res.status === 401) { window.location.href = '/admin/login'; return; }
         const m = await res.json();
         if (!res.ok) return;
         document.getElementById('message-content').innerHTML = \`
@@ -100,11 +101,6 @@ export async function handleAdminMessagesApi(env, id) {
     return jsonResponse(message);
   }
 
-  if (request?.method === 'POST' && id && path.includes('/read')) {
-    await DB.run('UPDATE contact_messages SET is_read = 1 WHERE id = ?', [parseInt(id)]);
-    return jsonResponse({ success: true });
-  }
-
   const messages = await DB.query('SELECT * FROM contact_messages ORDER BY created_at DESC');
   return jsonResponse(messages);
 }
@@ -123,8 +119,8 @@ async function adminLayout(content, user) {
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#fdf6ef',100:'#f9e8d8',200:'#f2cfb0',300:'#e9ae7e',400:'#df8a4d',500:'#d4702a',600:'#c55c1f',700:'#a4471c',800:'#833a1d',900:'#6a311a',950:'#3a170c'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
-  <style>.sidebar-link{transition:all .2s ease}.sidebar-link:hover{background:#fdf6ef;color:#c55c1f}</style>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#4f46e5',600:'#0000ba',700:'#00009a',800:'#00007a',900:'#00005a',950:'#00003a'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <style>.sidebar-link{transition:all .2s ease}.sidebar-link:hover{background:#eef2ff;color:#0000ba}</style>
 </head><body class="font-sans bg-gray-50 min-h-screen">
 <div class="flex h-screen overflow-hidden">
   <aside class="hidden lg:flex lg:flex-col w-64 bg-white border-r border-gray-200">

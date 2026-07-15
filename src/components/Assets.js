@@ -99,7 +99,7 @@ export const ANIMATIONS_CSS = `
   background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;
 }
 .form-input { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-.form-input:focus { border-color: #c55c1f; box-shadow: 0 0 0 3px rgba(197,92,31,0.1); }
+.form-input:focus { border-color: #0000ba; box-shadow: 0 0 0 3px rgba(0,0,186,0.1); }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
   20% { transform: translateX(-6px); }

@@ -211,6 +211,7 @@ export async function handleAdminProducts(env, user) {
         editingId = id;
         try {
           const res = await fetch('/admin/api/productos/' + id);
+          if (res.status === 401) { window.location.href = '/admin/login'; return; }
           const data = await res.json();
           if (!res.ok) { alert(data.error); return; }
 
@@ -274,6 +275,7 @@ export async function handleAdminProducts(env, user) {
             method,
             body: formData,
           });
+          if (res.status === 401) { window.location.href = '/admin/login'; return; }
           if (res.ok) {
             location.reload();
           } else {
@@ -292,6 +294,7 @@ export async function handleAdminProducts(env, user) {
         if (!confirm('¿Eliminar "' + name + '"? Esta acción no se puede deshacer.')) return;
         try {
           const res = await fetch('/admin/api/productos/' + id, { method: 'DELETE' });
+          if (res.status === 401) { window.location.href = '/admin/login'; return; }
           if (res.ok) location.reload();
           else alert('Error al eliminar');
         } catch {
@@ -340,7 +343,7 @@ export async function handleAdminProductsApi(request, env, id) {
 
       const presentationsRaw = formData.get('presentations');
       if (presentationsRaw) {
-        const lines = presentationsRaw.split('\\n').filter(Boolean);
+        const lines = presentationsRaw.split('\n').filter(Boolean);
         for (let i = 0; i < lines.length; i++) {
           const parts = lines[i].split(',').map(s => s.trim());
           await DB.insert('product_presentations', {
@@ -411,7 +414,7 @@ export async function handleAdminProductsApi(request, env, id) {
       await DB.delete('product_presentations', 'product_id', parseInt(id));
       const presentationsRaw = formData.get('presentations');
       if (presentationsRaw) {
-        const lines = presentationsRaw.split('\\n').filter(Boolean);
+        const lines = presentationsRaw.split('\n').filter(Boolean);
         for (let i = 0; i < lines.length; i++) {
           const parts = lines[i].split(',').map(s => s.trim());
           await DB.insert('product_presentations', {
@@ -497,12 +500,12 @@ async function adminLayoutWithContent(content, user) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#fdf6ef',100:'#f9e8d8',200:'#f2cfb0',300:'#e9ae7e',400:'#df8a4d',500:'#d4702a',600:'#c55c1f',700:'#a4471c',800:'#833a1d',900:'#6a311a',950:'#3a170c'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#4f46e5',600:'#0000ba',700:'#00009a',800:'#00007a',900:'#00005a',950:'#00003a'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
   <style>
     .sidebar-link { transition: all 0.2s ease; }
-    .sidebar-link:hover { background: #fdf6ef; color: #c55c1f; }
+    .sidebar-link:hover { background: #eef2ff; color: #0000ba; }
     .form-input { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-    .form-input:focus { border-color: #c55c1f; box-shadow: 0 0 0 3px rgba(197, 92, 31, 0.1); }
+    .form-input:focus { border-color: #0000ba; box-shadow: 0 0 0 3px rgba(0, 0, 186, 0.1); }
   </style>
 </head>
 <body class="font-sans bg-gray-50 min-h-screen">

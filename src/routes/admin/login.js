@@ -12,10 +12,10 @@ export async function handleLoginPage(env) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#fdf6ef',100:'#f9e8d8',200:'#f2cfb0',300:'#e9ae7e',400:'#df8a4d',500:'#d4702a',600:'#c55c1f',700:'#a4471c',800:'#833a1d',900:'#6a311a',950:'#3a170c'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#4f46e5',600:'#0000ba',700:'#00009a',800:'#00007a',900:'#00005a',950:'#00003a'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
   <style>
     .form-input { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-    .form-input:focus { border-color: #c55c1f; box-shadow: 0 0 0 3px rgba(197, 92, 31, 0.1); }
+    .form-input:focus { border-color: #0000ba; box-shadow: 0 0 0 3px rgba(0, 0, 186, 0.1); }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .login-card { animation: fadeIn 0.5s ease-out; }
   </style>
@@ -67,8 +67,12 @@ export async function handleLoginPage(env) {
       if (res.ok) {
         window.location.href = '/admin';
       } else {
-        const data = await res.json();
-        errorEl.textContent = data.error || 'Credenciales inválidas';
+        try {
+          const data = await res.json();
+          errorEl.textContent = data.error || 'Credenciales inválidas';
+        } catch {
+          errorEl.textContent = 'Error del servidor';
+        }
         errorEl.classList.remove('hidden');
         btn.disabled = false;
         btn.textContent = 'Iniciar Sesión';

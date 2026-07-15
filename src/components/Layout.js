@@ -25,11 +25,11 @@ export function Layout({ children, title, description, image, url, settings, cur
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#c55c1f">
+  <meta name="theme-color" content="#0000ba">
   <meta name="color-scheme" content="light">
   <meta name="robots" content="index, follow">
   ${seoMeta({ title, description, image, url })}
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23c55c1f'/><text x='16' y='22' text-anchor='middle' font-family='Arial' font-size='16' font-weight='bold' fill='white'>M</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230000ba'/><text x='16' y='22' text-anchor='middle' font-family='Arial' font-size='16' font-weight='bold' fill='white'>M</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -39,7 +39,7 @@ export function Layout({ children, title, description, image, url, settings, cur
       theme: {
         extend: {
           colors: {
-            primary: { 50:'#fdf6ef',100:'#f9e8d8',200:'#f2cfb0',300:'#e9ae7e',400:'#df8a4d',500:'#d4702a',600:'#c55c1f',700:'#a4471c',800:'#833a1d',900:'#6a311a',950:'#3a170c' },
+            primary: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#4f46e5',600:'#0000ba',700:'#00009a',800:'#00007a',900:'#00005a',950:'#00003a' },
             secondary: { 50:'#f0f7f4',100:'#daede4',200:'#b6dac9',300:'#8bc0a9',400:'#5ea286',500:'#3d856b',600:'#2e6b55',700:'#275645',800:'#224539',900:'#1d3a30',950:'#0e201a' },
           },
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
