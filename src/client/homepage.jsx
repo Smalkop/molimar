@@ -43,13 +43,14 @@ const wipeReveal = {
   visible: { clipPath: 'inset(0 0% 0 0)', transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1] } },
 };
 
-function SectionWipe({ children, className }) {
+function SectionWipe({ children, className, animateOnMount = false }) {
   return (
     <motion.div
       className={className}
       variants={wipeReveal}
       initial="hidden"
-      whileInView="visible"
+      animate={animateOnMount ? 'visible' : undefined}
+      whileInView={animateOnMount ? undefined : 'visible'}
       viewport={{ once: true, margin: '-60px' }}
       style={{ willChange: 'clip-path' }}
     >
@@ -207,7 +208,7 @@ function Homepage() {
   return (
     <>
       {/* Hero */}
-      <SectionWipe className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900">
+      <SectionWipe animateOnMount={true} className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/images/hero-bg.webp')" }} />
           <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent" />
@@ -305,7 +306,7 @@ function Homepage() {
           <div className="absolute inset-0 bg-repeat" style={{ backgroundImage: "url('/images/pattern.svg')" }} />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <SectionWipe>
+          <SectionWipe animateOnMount={true}>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">¿Listo para trabajar con nosotros?</h2>
             <p className="text-primary-100 text-lg mb-10 max-w-2xl mx-auto">Contactanos para conocer más sobre nuestros productos y cómo podemos ayudarte a hacer crecer tu negocio.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
