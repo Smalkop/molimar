@@ -6,7 +6,7 @@ const branches = [
     name: 'Planta Central',
     location: 'Dr. Juan Eulogio Estigarribia',
     address: 'Ruta Py 02 Km 213, Campo 9',
-    phone: '+595 986 288 006',
+    phone: '+595 986 288006',
     map: 'https://maps.app.goo.gl/ncibsNiTsyne2TpP6',
     isMain: true,
   },
