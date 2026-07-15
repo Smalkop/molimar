@@ -1,0 +1,22 @@
+name = "molipar-web"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "molipar"
+database_id = "molipar"
+
+# R2 Bucket
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "productos-clientes"
+
+# Environment variables
+[vars]
+SITE_NAME = "Molipar S.A."
+SITE_URL = "https://molipar.com"
+ADMIN_EMAIL = "admin@molipar.com"
+JWT_SECRET = "molipar-secret-key-change-in-production"

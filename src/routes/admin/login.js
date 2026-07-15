@@ -1,0 +1,117 @@
+import { htmlResponse, jsonResponse } from '../../utils/html.js';
+import AUTH from '../../services/auth.js';
+
+export async function handleLoginPage(env) {
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión | Molipar Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#fdf6ef',100:'#f9e8d8',200:'#f2cfb0',300:'#e9ae7e',400:'#df8a4d',500:'#d4702a',600:'#c55c1f',700:'#a4471c',800:'#833a1d',900:'#6a311a',950:'#3a170c'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <style>
+    .form-input { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .form-input:focus { border-color: #c55c1f; box-shadow: 0 0 0 3px rgba(197, 92, 31, 0.1); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .login-card { animation: fadeIn 0.5s ease-out; }
+  </style>
+</head>
+<body class="font-sans bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen flex items-center justify-center p-4">
+  <div class="login-card w-full max-w-md">
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <div class="text-center mb-8">
+        <img src="/static/images/logo.png" alt="Molipar" class="h-16 mx-auto mb-4">
+        <h1 class="text-2xl font-bold text-gray-900">Panel de Administración</h1>
+        <p class="text-gray-500 text-sm mt-2">Ingresá tus credenciales</p>
+      </div>
+      <form id="login-form" class="space-y-5">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+          <input type="email" id="email" name="email" required
+                 class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                 placeholder="admin@molipar.com">
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <input type="password" id="password" name="password" required
+                 class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none"
+                 placeholder="••••••••">
+        </div>
+        <button type="submit"
+                class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50">
+          Iniciar Sesión
+        </button>
+      </form>
+      <div id="login-error" class="mt-4 text-center text-sm text-red-600 hidden"></div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      const errorEl = document.getElementById('login-error');
+      btn.disabled = true;
+      btn.textContent = 'Ingresando...';
+      errorEl.classList.add('hidden');
+
+      const res = await fetch('/admin/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: e.target.email.value, password: e.target.password.value }),
+      });
+
+      if (res.ok) {
+        window.location.href = '/admin';
+      } else {
+        const data = await res.json();
+        errorEl.textContent = data.error || 'Credenciales inválidas';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Iniciar Sesión';
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  return htmlResponse(html);
+}
+
+export async function handleLoginApi(request, env) {
+  let data;
+  try { data = await request.json(); } catch { return jsonResponse({ error: 'Datos inválidos' }, 400); }
+
+  if (!data.email || !data.password) {
+    return jsonResponse({ error: 'Email y contraseña requeridos' }, 400);
+  }
+
+  AUTH.setEnv(env);
+  const result = await AUTH.authenticate(data.email, data.password);
+
+  if (!result) {
+    return jsonResponse({ error: 'Credenciales inválidas' }, 401);
+  }
+
+  const headers = new Headers({
+    'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+    'Content-Type': 'application/json',
+  });
+
+  return new Response(JSON.stringify({ success: true, user: result.user }), {
+    status: 200,
+    headers,
+  });
+}
+
+export async function handleLogout() {
+  const headers = new Headers({
+    'Set-Cookie': 'token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict',
+    'Location': '/admin/login',
+  });
+
+  return new Response(null, { status: 302, headers });
+}

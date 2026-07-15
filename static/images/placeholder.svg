@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#f3f4f6"/>
+  <g transform="translate(200,130)" fill="none" stroke="#d1d5db" stroke-width="2">
+    <rect x="-40" y="-30" width="80" height="60" rx="4"/>
+    <path d="M-20-10 L0-25 L20-10 M-30 10 L-10-5 L10 10 L30-5"/>
+  </g>
+  <text x="200" y="190" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#9ca3af">Próximamente</text>
+</svg>
