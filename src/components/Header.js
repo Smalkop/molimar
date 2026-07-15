@@ -12,7 +12,7 @@ export function Header({ settings, currentPath }) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
           <a href="/" class="flex items-center space-x-3">
-            <img src="/static/images/logo.png" alt="Molipar S.A." class="header-logo h-12 w-auto transition-all duration-300">
+            <img src="/images/logo.png" alt="Molipar S.A." class="header-logo h-12 w-auto transition-all duration-300">
             <span class="text-xl font-bold text-primary-700 hidden sm:block">Molipar</span>
           </a>
 

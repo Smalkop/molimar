@@ -18,7 +18,7 @@ export async function handleHome(env, settings) {
     <!-- Hero Section -->
     <section class="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900">
       <div class="absolute inset-0">
-        <div class="hero-zoom absolute inset-0 bg-[url('/static/images/hero-bg.svg')] bg-cover bg-center opacity-30"></div>
+        <div class="hero-zoom absolute inset-0 bg-[url('/images/hero-bg.svg')] bg-cover bg-center opacity-30"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent"></div>
       </div>
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
@@ -59,7 +59,7 @@ export async function handleHome(env, settings) {
           </div>
           <div class="animate-scale-in relative">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-2xl">
-              <img src="/static/images/about-preview.svg" alt="Molipar S.A." class="w-full h-full object-cover card-image" loading="lazy">
+              <img src="/images/about-preview.svg" alt="Molipar S.A." class="w-full h-full object-cover card-image" loading="lazy">
             </div>
             <div class="absolute -bottom-6 -left-6 bg-primary-600 text-white p-8 rounded-2xl shadow-xl hidden lg:block">
               <p class="text-4xl font-bold">+50</p>
@@ -147,7 +147,7 @@ export async function handleHome(env, settings) {
     <!-- CTA -->
     <section class="py-24 bg-gradient-to-r from-primary-800 to-primary-700 relative overflow-hidden">
       <div class="absolute inset-0 opacity-10">
-        <div class="absolute inset-0 bg-[url('/static/images/pattern.svg')] bg-repeat"></div>
+        <div class="absolute inset-0 bg-[url('/images/pattern.svg')] bg-repeat"></div>
       </div>
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div class="animate-on-scroll">

@@ -26,7 +26,7 @@ export async function handleAbout(env, settings) {
           </div>
           <div class="animate-fade-right relative">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-xl">
-              <img src="/static/images/about-history.svg" alt="Historia Molipar" class="w-full h-full object-cover card-image" loading="lazy">
+              <img src="/images/about-history.svg" alt="Historia Molipar" class="w-full h-full object-cover card-image" loading="lazy">
             </div>
           </div>
         </div>

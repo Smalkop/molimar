@@ -145,6 +145,11 @@ export default {
       return serveMedia(pathname.replace('/media/', ''), env);
     }
 
+    // Favicon
+    if (pathname === '/favicon.ico') {
+      return new Response(null, { status: 204 });
+    }
+
     // Load settings for all pages
     const settings = await loadSettings(env);
 

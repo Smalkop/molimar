@@ -24,7 +24,7 @@ export async function handleLoginPage(env) {
   <div class="login-card w-full max-w-md">
     <div class="bg-white rounded-2xl shadow-xl p-8">
       <div class="text-center mb-8">
-        <img src="/static/images/logo.png" alt="Molipar" class="h-16 mx-auto mb-4">
+        <img src="/images/logo.png" alt="Molipar" class="h-16 mx-auto mb-4">
         <h1 class="text-2xl font-bold text-gray-900">Panel de Administración</h1>
         <p class="text-gray-500 text-sm mt-2">Ingresá tus credenciales</p>
       </div>

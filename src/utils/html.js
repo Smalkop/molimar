@@ -74,8 +74,8 @@ export function htmlResponse(html, status = 200, extraHeaders = {}) {
 }
 
 export function imgUrl(path) {
-  if (!path) return '/static/images/placeholder.svg';
-  if (path.startsWith('http') || path.startsWith('/static/') || path.startsWith('data:')) return path;
+  if (!path) return '/images/placeholder.svg';
+  if (path.startsWith('http') || path.startsWith('/') || path.startsWith('data:')) return path;
   return '/media/' + path;
 }
 

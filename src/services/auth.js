@@ -86,9 +86,15 @@ const AUTH = {
     return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
   },
 
+  setEnv(env) {
+    AUTH.env = env;
+  },
+
   getSecret() {
-    return typeof JWT_SECRET !== 'undefined' ? JWT_SECRET : 'molipar-secret-key';
+    return AUTH.env?.JWT_SECRET || 'molipar-secret-key';
   },
 };
+
+AUTH.env = null;
 
 export default AUTH;
