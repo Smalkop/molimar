@@ -18,14 +18,14 @@ export async function handleHome(env, settings) {
 
   function productCards(list) {
     return list.length > 0 ? list.map((product, i) => `
-      <div class="product-card bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 card-hover" style="will-change: transform, opacity; transition-delay: ${i * 0.05}s">
-        <div class="relative h-52 overflow-hidden">
+      <div class="product-card bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 card-hover" style="will-change: transform, opacity; transition-delay: ${i * 0.05}s">
+        <div class="relative h-64 overflow-hidden">
           <img src="${imgUrl(product.main_image)}" alt="${product.name}" class="card-image w-full h-full object-cover" loading="lazy">
           <span class="absolute top-3 left-3 px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">${product.type_name}</span>
         </div>
-        <div class="p-5">
-          <h3 class="font-semibold text-gray-900 text-lg mb-2">${product.name}</h3>
-          <p class="text-gray-600 text-sm leading-relaxed mb-4">${product.short_description || ''}</p>
+        <div class="p-6">
+          <h3 class="font-semibold text-gray-900 text-xl mb-2">${product.name}</h3>
+          <p class="text-gray-600 text-sm leading-relaxed mb-5">${product.short_description || ''}</p>
           <div class="flex items-center justify-between">
             <a href="/productos/${product.slug}" class="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">Ver más</a>
             <a href="https://wa.me/${normalizeWhatsApp(settings.whatsapp) || '595986288006'}?text=${encodeURIComponent('Hola, quiero información sobre ' + product.name)}" target="_blank"
@@ -44,7 +44,7 @@ export async function handleHome(env, settings) {
 
   function grid(type, list, extraClass) {
     return `
-      <div class="product-grid ${extraClass || ''} grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" data-type="${type}" style="will-change: transform, opacity;">
+      <div class="product-grid ${extraClass || ''} grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10" data-type="${type}" style="will-change: transform, opacity;">
         ${productCards(list)}
       </div>
     `;
@@ -94,8 +94,8 @@ export async function handleHome(env, settings) {
             </a>
           </div>
           <div class="animate-scale-in relative">
-            <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-2xl">
-              <img src="/images/about-preview.svg" alt="Molipar S.A." class="w-full h-full object-cover card-image" loading="lazy">
+            <div class="aspect-w-1 aspect-h-1 rounded-2xl overflow-hidden shadow-2xl">
+              <img src="/images/about-preview.webp" alt="Molipar S.A." class="w-full h-full object-cover card-image" loading="lazy">
             </div>
             <div class="absolute -bottom-6 -left-6 bg-primary-600 text-white p-8 rounded-2xl shadow-xl hidden lg:block">
               <p class="text-4xl font-bold">+50</p>
@@ -135,25 +135,25 @@ export async function handleHome(env, settings) {
 
         <div class="product-catalog-container relative overflow-hidden" style="min-height: 420px;">
           <div class="product-grid active" data-type="harinas">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               ${productCards(harinas)}
             </div>
           </div>
 
           <div class="product-grid enter-right absolute inset-0" data-type="fideos" style="pointer-events: none;">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               ${productCards(fideos)}
             </div>
           </div>
 
           <div class="product-grid hidden" data-type="harinas-secondary">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               ${productCards(harinas)}
             </div>
           </div>
 
           <div class="product-grid hidden" data-type="fideos-secondary">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
               ${productCards(fideos)}
             </div>
           </div>
