@@ -129,6 +129,11 @@ export default {
     DB.setEnv(env);
     await ensureDatabase(env);
 
+    // Static files from R2
+    if (pathname.startsWith('/images/') || pathname.startsWith('/css/') || pathname.startsWith('/js/')) {
+      return serveStatic(pathname.slice(1), env);
+    }
+
     // CORS preflight
     if (method === 'OPTIONS') {
       return new Response(null, {
@@ -272,6 +277,23 @@ async function generateSitemap(env, settings) {
   return new Response(xml, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
   });
+}
+
+async function serveStatic(key, env) {
+  try {
+    const object = await env.R2.get('static/' + key);
+    if (!object) {
+      return new Response(null, { status: 404 });
+    }
+    const headers = {
+      'Cache-Control': 'public, max-age=86400',
+      'ETag': object.httpEtag || '',
+      'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+    };
+    return new Response(object.body, { headers });
+  } catch {
+    return new Response(null, { status: 404 });
+  }
 }
 
 async function serveMedia(key, env) {

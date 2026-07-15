@@ -8,7 +8,7 @@
     "dev:local": "wrangler dev --local",
     "build:css": "tailwindcss -i ./static/css/tailwind.css -o ./static/css/output.css --minify",
     "build": "npm run build:css && node scripts/build.js",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run build && node scripts/upload-static.mjs && wrangler deploy",
     "migrate": "wrangler d1 execute molipar --file=./migrations/001_initial.sql",
     "migrate:local": "wrangler d1 execute molipar --local --file=./migrations/001_initial.sql",
     "seed": "wrangler d1 execute molipar --file=./migrations/002_seed.sql"
