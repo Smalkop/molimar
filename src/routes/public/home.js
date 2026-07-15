@@ -54,7 +54,7 @@ export async function handleHome(env, settings) {
     <!-- Hero Section -->
     <section class="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900">
       <div class="absolute inset-0">
-        <div class="hero-zoom absolute inset-0 bg-[url('/images/hero-bg.svg')] bg-cover bg-center opacity-30"></div>
+        <div class="hero-zoom absolute inset-0 bg-[url('/images/hero-bg.webp')] bg-cover bg-center"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent"></div>
       </div>
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
