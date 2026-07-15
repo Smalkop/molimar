@@ -17,6 +17,15 @@ ${css}`;
   writeFileSync('./static/css/output.css', placeholder);
 }
 
+// Build React client bundle
+try {
+  execSync('npx esbuild src/client/homepage.jsx --bundle --outfile=static/js/homepage.bundle.js --format=iife --global-name=HomepageApp --loader:.jsx=jsx --jsx-factory=React.createElement --jsx-fragment=React.Fragment --define:process.env.NODE_ENV=\\"production\\" --minify --target=es2020', { stdio: 'inherit' });
+  console.log('  ✓ React bundle built (static/js/homepage.bundle.js)');
+} catch (e) {
+  console.log('  ✗ React bundle failed:', e.message);
+  process.exit(1);
+}
+
 // Verify structure
 const required = [
   'src/index.js',
@@ -24,6 +33,7 @@ const required = [
   'migrations/002_seed.sql',
   'static/css/animations.css',
   'static/js/animations.js',
+  'static/js/homepage.bundle.js',
 ];
 
 let allOk = true;
