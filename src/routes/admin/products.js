@@ -235,7 +235,7 @@ export async function handleAdminProducts(env, user) {
           }
 
           if (data.presentations) {
-            document.getElementById('product-presentations').value = data.presentations.map(p => p.name + ', ' + (p.weight || '') + ', ' + (p.price || '')).join('\n');
+            document.getElementById('product-presentations').value = data.presentations.map(p => p.name + ', ' + (p.weight || '') + ', ' + (p.price || '')).join('\\n');
           }
 
           document.getElementById('product-modal').classList.remove('hidden');
