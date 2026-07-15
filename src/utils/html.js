@@ -79,6 +79,15 @@ export function imgUrl(path) {
   return '/media/' + path;
 }
 
+export function normalizeWhatsApp(raw) {
+  if (!raw) return '';
+  const digits = String(raw).replace(/\D/g, '');
+  if (digits.startsWith('549') && digits.length > 3) {
+    return '54' + digits.slice(3);
+  }
+  return digits;
+}
+
 export function redirectResponse(url) {
   return new Response(null, {
     status: 302,

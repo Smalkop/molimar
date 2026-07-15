@@ -1,4 +1,4 @@
-import { htmlResponse, jsonResponse, sanitizeString } from '../../utils/html.js';
+import { htmlResponse, jsonResponse, sanitizeString, normalizeWhatsApp } from '../../utils/html.js';
 import DB from '../../services/database.js';
 
 export async function handleAdminSettings(env, user) {
@@ -140,11 +140,12 @@ export async function handleAdminSettingsApi(request, env) {
   if (request.method === 'PUT') {
     const data = await request.json();
     for (const [key, value] of Object.entries(data)) {
+      const val = key === 'whatsapp' ? normalizeWhatsApp(String(value)) : sanitizeString(String(value));
       const existing = await DB.get('SELECT id FROM site_settings WHERE setting_key = ?', [key]);
       if (existing) {
-        await DB.run('UPDATE site_settings SET setting_value = ?, updated_at = datetime(\'now\') WHERE setting_key = ?', [sanitizeString(String(value)), key]);
+        await DB.run('UPDATE site_settings SET setting_value = ?, updated_at = datetime(\'now\') WHERE setting_key = ?', [val, key]);
       } else {
-        await DB.insert('site_settings', { setting_key: key, setting_value: sanitizeString(String(value)), setting_group: 'general' });
+        await DB.insert('site_settings', { setting_key: key, setting_value: val, setting_group: 'general' });
       }
     }
     return jsonResponse({ success: true });

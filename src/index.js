@@ -57,7 +57,7 @@ INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) 
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('company_values', '[{"title":"Calidad","description":"Compromiso absoluto con la excelencia en cada producto que elaboramos.","icon":"quality"},{"title":"Innovación","description":"Mejora continua e incorporación de tecnología de vanguardia en nuestros procesos.","icon":"innovation"},{"title":"Tradición","description":"Respeto por la herencia molinera y el saber hacer transmitido por generaciones.","icon":"tradition"},{"title":"Responsabilidad","description":"Compromiso con el medio ambiente, nuestros colaboradores y la comunidad.","icon":"responsibility"}]', 'company');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('address', 'Av. Industrial 1234, Parque Industrial, Ciudad', 'contact');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('phone', '+54 11 4567-8901', 'contact');
-INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('whatsapp', '5491145678901', 'contact');
+INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('whatsapp', '595981659994', 'contact');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('email', 'info@molipar.com', 'contact');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('facebook', 'https://facebook.com/molipar', 'social');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('instagram', 'https://instagram.com/molipar', 'social');
