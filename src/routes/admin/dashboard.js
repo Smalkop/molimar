@@ -116,10 +116,6 @@ async function adminLayout(content, user) {
       <div class="p-6 border-b border-gray-100">
         <div class="flex items-center space-x-3">
           <img src="/images/logo.png" alt="Molipar" class="h-10 w-auto">
-          <div>
-            <p class="font-bold text-gray-900 text-sm">Molipar Admin</p>
-            <p class="text-xs text-gray-500">${user.role}</p>
-          </div>
         </div>
       </div>
       <nav class="flex-1 py-4 space-y-1 px-3">
