@@ -132,10 +132,28 @@ export async function handleContact(env, settings) {
 
     <!-- Mapa -->
     <section class="bg-gray-50">
-      <div class="h-80 bg-gray-200 flex items-center justify-center">
-        <div class="text-center text-gray-500">
-          <svg class="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <p>Mapa interactivo — ${settings.address || 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9)'}</p>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center mb-10 animate-on-scroll">
+          <span class="text-primary-600 font-semibold text-sm tracking-wider uppercase">Ubicación</span>
+          <h2 class="text-3xl font-bold text-gray-900 mt-3">Encontranos</h2>
+        </div>
+        <div class="animate-scale-in rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d-55.7375!3d-25.4167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjXCsDI1JzAwLjAiUyA1NcKwNDQnMTUuMCJX!5e0!3m2!1ses-419!2spy!4v1"
+            width="100%" height="400" style="border:0; display: block;"
+            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            title="Ubicación de Molipar - ${settings.address || 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9)'}">
+          </iframe>
+        </div>
+        <div class="text-center mt-6">
+          <a href="https://maps.app.goo.gl/ncibsNiTsyne2TpP6" target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Abrir en Google Maps
+          </a>
         </div>
       </div>
     </section>
