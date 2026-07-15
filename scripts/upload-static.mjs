@@ -1,6 +1,9 @@
 import { execSync } from 'child_process';
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const WRANGLER = resolve(__dirname, '..', 'node_modules', 'wrangler', 'bin', 'wrangler.js');
 
 const MIME = {
   html: 'text/html', css: 'text/css', js: 'application/javascript',
@@ -28,7 +31,7 @@ console.log(`Uploading ${files.length} static files to R2...`);
 for (const f of files) {
   console.log(`  ${f.key}`);
   execSync(
-    `npx wrangler r2 object put productos-clientes/${f.key} --file="${f.path}" --content-type="${f.type}"`,
+    `${WRANGLER} r2 object put productos-clientes/${f.key} --file="${f.path}" --content-type="${f.type}"`,
     { stdio: 'inherit' }
   );
 }
