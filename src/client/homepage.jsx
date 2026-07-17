@@ -269,13 +269,13 @@ function Homepage() {
       <Catalog harinas={harinas} fideos={fideos} whatsapp={wa} />
 
       {/* Benefits */}
-      <SectionWipe animateOnMount={true} className="py-24 bg-white">
+      <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
+          <motion.div variants={fadeUp} initial="hidden" animate="visible" className="text-center mb-16">
             <span className="text-primary-600 font-semibold text-sm tracking-wider uppercase">Beneficios</span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-3">¿Por qué elegir Molipar?</h2>
           </motion.div>
-          <motion.div variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div variants={staggerChildren} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               { icon: 'award', title: 'Calidad Superior', desc: 'Controles rigurosos en cada etapa del proceso productivo.' },
               { icon: 'truck', title: 'Distribución Eficiente', desc: 'Logística propia que garantiza entregas puntuales en todo el país.' },
@@ -297,7 +297,7 @@ function Homepage() {
             ))}
           </motion.div>
         </div>
-      </SectionWipe>
+      </section>
 
       {/* CTA with wheat floating particles */}
       <section className="py-24 bg-gradient-to-r from-primary-800 to-primary-700 relative overflow-hidden">
