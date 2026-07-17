@@ -1,5 +1,57 @@
 import { htmlResponse, jsonResponse } from '../../utils/html.js';
 import AUTH from '../../services/auth.js';
+import DB from '../../services/database.js';
+
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
+function getLoginKey(ip, email) {
+  return `login:${ip}:${email}`;
+}
+
+async function checkRateLimit(ip, email) {
+  try {
+    const row = await DB.get(
+      "SELECT setting_value FROM site_settings WHERE setting_key = ?",
+      [getLoginKey(ip, email)]
+    );
+    if (!row) return true;
+    const data = JSON.parse(row.setting_value);
+    const elapsed = (Date.now() - data.first_attempt) / 1000 / 60;
+    if (elapsed < LOCKOUT_MINUTES && data.attempts >= MAX_LOGIN_ATTEMPTS) {
+      return false;
+    }
+    if (elapsed >= LOCKOUT_MINUTES) {
+      await DB.run("DELETE FROM site_settings WHERE setting_key = ?", [getLoginKey(ip, email)]);
+      return true;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+async function recordAttempt(ip, email) {
+  try {
+    const key = getLoginKey(ip, email);
+    const row = await DB.get("SELECT setting_value FROM site_settings WHERE setting_key = ?", [key]);
+    if (row) {
+      const data = JSON.parse(row.setting_value);
+      data.attempts += 1;
+      await DB.run("UPDATE site_settings SET setting_value = ?, updated_at = datetime('now') WHERE setting_key = ?", [JSON.stringify(data), key]);
+    } else {
+      const data = { attempts: 1, first_attempt: Date.now() };
+      const stmt = DB.env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES (?, ?, 'security')");
+      await stmt.bind(key, JSON.stringify(data)).run();
+    }
+  } catch {}
+}
+
+async function clearAttempts(ip, email) {
+  try {
+    await DB.run("DELETE FROM site_settings WHERE setting_key = ?", [getLoginKey(ip, email)]);
+  } catch {}
+}
 
 export async function handleLoginPage(env) {
   const html = `<!DOCTYPE html>
@@ -93,12 +145,23 @@ export async function handleLoginApi(request, env) {
     return jsonResponse({ error: 'Email y contraseña requeridos' }, 400);
   }
 
+  DB.setEnv(env);
   AUTH.setEnv(env);
+
+  const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+  const allowed = await checkRateLimit(ip, data.email);
+  if (!allowed) {
+    return jsonResponse({ error: `Demasiados intentos. Esperá ${LOCKOUT_MINUTES} minutos.` }, 429);
+  }
+
   const result = await AUTH.authenticate(data.email, data.password);
 
   if (!result) {
+    await recordAttempt(ip, data.email);
     return jsonResponse({ error: 'Credenciales inválidas' }, 401);
   }
+
+  await clearAttempts(ip, data.email);
 
   const headers = new Headers({
     'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.NODE_ENV === 'production' ? '; Secure' : ''}`,
@@ -111,7 +174,13 @@ export async function handleLoginApi(request, env) {
   });
 }
 
-export async function handleLogout() {
+export async function handleLogout(request) {
+  const cookie = request.headers.get('Cookie') || '';
+  const tokenMatch = cookie.match(/token=([^;]+)/);
+  if (tokenMatch) {
+    AUTH.invalidateToken(tokenMatch[1]);
+  }
+
   const headers = new Headers({
     'Set-Cookie': 'token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict',
     'Location': '/admin/login',

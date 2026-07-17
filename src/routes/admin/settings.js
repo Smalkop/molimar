@@ -1,4 +1,4 @@
-import { htmlResponse, jsonResponse, sanitizeString, normalizeWhatsApp } from '../../utils/html.js';
+import { htmlResponse, jsonResponse, sanitizeString, escapeHtml, normalizeWhatsApp } from '../../utils/html.js';
 import DB from '../../services/database.js';
 
 export async function handleAdminSettings(env, user) {
@@ -31,8 +31,8 @@ export async function handleAdminSettings(env, user) {
               <div class="${type === 'textarea' ? 'sm:col-span-2' : ''}">
                 <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
                 ${type === 'textarea'
-                  ? `<textarea name="${key}" rows="3" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">${val || ''}</textarea>`
-                  : `<input type="text" name="${key}" value="${val || ''}" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">`}
+                  ? `<textarea name="${key}" rows="3" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">${escapeHtml(val || '')}</textarea>`
+                  : `<input type="text" name="${key}" value="${escapeHtml(val || '')}" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">`}
               </div>
             `).join('')}
           </div>
@@ -48,7 +48,7 @@ export async function handleAdminSettings(env, user) {
             ].map(([key, label, val]) => `
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
-                <textarea name="${key}" rows="4" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">${val || ''}</textarea>
+                <textarea name="${key}" rows="4" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">${escapeHtml(val || '')}</textarea>
               </div>
             `).join('')}
           </div>
@@ -63,7 +63,7 @@ export async function handleAdminSettings(env, user) {
             ].map(([key, label]) => `
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
-                <input type="text" name="${key}" value="${settings.contact?.[key] || ''}" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
+                <input type="text" name="${key}" value="${escapeHtml(settings.contact?.[key] || '')}" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
               </div>
             `).join('')}
           </div>
@@ -75,7 +75,7 @@ export async function handleAdminSettings(env, user) {
             ${['facebook', 'instagram', 'linkedin', 'youtube'].map(key => `
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1 capitalize">${key}</label>
-                <input type="url" name="${key}" value="${settings.social?.[key] || ''}" placeholder="https://${key}.com/..." class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
+                <input type="url" name="${key}" value="${escapeHtml(settings.social?.[key] || '')}" placeholder="https://${key}.com/..." class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
               </div>
             `).join('')}
           </div>
@@ -91,7 +91,7 @@ export async function handleAdminSettings(env, user) {
             ].map(([key, label]) => `
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
-                <input type="text" name="${key}" value="${settings.home?.[key] || ''}" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
+                <input type="text" name="${key}" value="${escapeHtml(settings.home?.[key] || '')}" class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
               </div>
             `).join('')}
           </div>

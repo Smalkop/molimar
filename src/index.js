@@ -17,7 +17,7 @@ import { handleAdminUsers, handleAdminUsersApi } from './routes/admin/users.js';
 import { handleAdminSettings, handleAdminSettingsApi } from './routes/admin/settings.js';
 import { handleAdminMessages, handleAdminMessagesApi, handleAdminMessagesRead } from './routes/admin/messages.js';
 
-import { htmlResponse, jsonResponse, redirectResponse } from './utils/html.js';
+import { htmlResponse, jsonResponse, redirectResponse, optionsResponse, securityHeaders } from './utils/html.js';
 import { requireAdmin } from './middleware/auth.js';
 
 const SCHEMA_SQL = `
@@ -108,24 +108,30 @@ async function ensureDatabase(env) {
   if (!dbExists) {
     const schemaStmts = SCHEMA_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
     for (const stmt of schemaStmts) {
-      try { await env.DB.prepare(stmt).all(); } catch {}
+      try { await env.DB.prepare(stmt).all(); } catch (e) { console.error('Schema init error:', e); }
     }
 
     const seedStmts = SEED_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
     for (const stmt of seedStmts) {
-      try { await env.DB.prepare(stmt).all(); } catch {}
+      try { await env.DB.prepare(stmt).all(); } catch (e) { console.error('Seed init error:', e); }
     }
 
     try {
       const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind('admin@molipar.com').first();
       if (!existing) {
-        const encoder = new TextEncoder();
-        const pwdData = encoder.encode('admin123' + 'MOLIPAR_SALT_2024');
-        const pwdHash = await crypto.subtle.digest('SHA-256', pwdData);
-        const hashHex = Array.from(new Uint8Array(pwdHash)).map(b => b.toString(16).padStart(2, '0')).join('');
-        await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', hashHex, 'admin').all();
+        const pwdHash = await AUTH.hashPassword('admin123');
+        await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', pwdHash, 'admin').all();
+        try {
+          await env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'false', 'security')").all();
+        } catch {}
+      } else {
+        const stored = existing.password;
+        if (stored && stored.indexOf(':') === -1 && stored.length === 64) {
+          const pwdHash = await AUTH.hashPassword('admin123');
+          await env.DB.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(pwdHash, existing.id).all();
+        }
       }
-    } catch {}
+    } catch (e) { console.error('Error creating admin user:', e); }
   }
 
   for (const [key, val] of Object.entries(SETTING_UPDATES)) {
@@ -162,15 +168,8 @@ export default {
       return serveStatic(pathname.slice(1), env);
     }
 
-    // CORS preflight
     if (method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      });
+      return optionsResponse(env);
     }
 
     // Media files from R2
@@ -215,13 +214,13 @@ export default {
     // ===== ADMIN ROUTES =====
     if (pathname === '/admin/login' && method === 'GET') return handleLoginPage(env);
     if (pathname === '/admin/api/login' && method === 'POST') return handleLoginApi(request, env);
-    if (pathname === '/admin/logout') return handleLogout();
+    if (pathname === '/admin/logout') return handleLogout(request);
 
     // Protected admin routes
     const auth = await requireAdmin(request, env);
     if (!auth.authenticated && pathname.startsWith('/admin')) {
       if (pathname.startsWith('/admin/api/')) {
-        return jsonResponse({ error: 'No autenticado' }, 401);
+        return jsonResponse({ error: 'No autenticado' }, 401, env);
       }
       return redirectResponse('/admin/login');
     }

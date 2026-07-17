@@ -1,8 +1,8 @@
 -- Seed data for Molipar S.A.
 
--- Admin user (password: admin123 - hashed with SHA-256)
-INSERT INTO users (name, email, password, role) VALUES
-('Administrador', 'admin@molipar.com', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOfMQkfAjkMBcGmKcVq9FJwJcYpXJxKqy', 'admin');
+-- Admin user creado automaticamente en src/index.js via ensureDatabase()
+-- con PBKDF2 + salt aleatorio. Este seed ya no incluye el usuario admin
+-- para evitar inconsistencias de hash.
 
 -- Product types
 INSERT INTO product_types (name, slug, description, icon, sort_order) VALUES

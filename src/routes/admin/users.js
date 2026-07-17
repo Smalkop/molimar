@@ -142,8 +142,9 @@ export async function handleAdminUsersApi(request, env, id) {
     const existing = await DB.get('SELECT id FROM users WHERE email = ?', [data.email]);
     if (existing) return jsonResponse({ error: 'Email ya registrado' }, 400);
 
+    const role = (data.role === 'admin' || data.role === 'editor') ? data.role : 'editor';
     const hash = await AUTH.hashPassword(data.password);
-    await DB.insert('users', { name: sanitizeString(data.name), email: sanitizeString(data.email), password: hash, role: data.role || 'editor' });
+    await DB.insert('users', { name: sanitizeString(data.name), email: sanitizeString(data.email), password: hash, role });
     return jsonResponse({ success: true });
   }
 
@@ -153,7 +154,7 @@ export async function handleAdminUsersApi(request, env, id) {
     if (data.name) updates.name = sanitizeString(data.name);
     if (data.email) updates.email = sanitizeString(data.email);
     if (data.password) updates.password = await AUTH.hashPassword(data.password);
-    if (data.role) updates.role = data.role;
+    if (data.role === 'admin' || data.role === 'editor') updates.role = data.role;
     await DB.update('users', updates, 'id', parseInt(id));
     return jsonResponse({ success: true });
   }

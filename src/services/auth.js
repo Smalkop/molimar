@@ -1,16 +1,59 @@
 import DB from './database.js';
 
+const VALID_TABLE_RE = /^[a-z_][a-z0-9_]*$/;
+
+function validateTableName(name) {
+  if (!VALID_TABLE_RE.test(name)) {
+    throw new Error(`Nombre de tabla inválido: ${name}`);
+  }
+}
+
+function generateSalt() {
+  return crypto.getRandomValues(new Uint8Array(16));
+}
+
+function hex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function parseHex(hexStr) {
+  const match = hexStr.match(/.{2}/g);
+  if (!match) throw new Error('Invalid hex string');
+  return new Uint8Array(match.map(b => parseInt(b, 16)));
+}
+
+const PBKDF2_ITERATIONS = 100000;
+
+async function deriveKey(password, salt) {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const hash = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    keyMaterial, 256
+  );
+  return new Uint8Array(hash);
+}
+
 const AUTH = {
   async hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + 'MOLIPAR_SALT_2024');
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const salt = generateSalt();
+    const hash = await deriveKey(password, salt);
+    return hex(salt) + ':' + hex(hash);
   },
 
-  async verifyPassword(password, hash) {
-    const hashed = await AUTH.hashPassword(password);
-    return hashed === hash;
+  async verifyPassword(password, stored) {
+    const sep = stored.indexOf(':');
+    if (sep === -1) return false;
+    const saltHex = stored.slice(0, sep);
+    const hashHex = stored.slice(sep + 1);
+    if (!saltHex || !hashHex) return false;
+    try {
+      const salt = parseHex(saltHex);
+      const hash = await deriveKey(password, salt);
+      return hex(hash) === hashHex;
+    } catch {
+      return false;
+    }
   },
 
   async generateToken(user) {
@@ -30,9 +73,10 @@ const AUTH = {
     const payloadB64 = btoa(JSON.stringify(payload));
     const signatureInput = `${headerB64}.${payloadB64}`;
 
+    const secret = AUTH.getSecret();
     const key = await crypto.subtle.importKey(
       'raw',
-      encoder.encode(AUTH.getSecret()),
+      encoder.encode(secret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
@@ -46,6 +90,8 @@ const AUTH = {
 
   async verifyToken(token) {
     try {
+      if (AUTH.isTokenInvalidated(token)) return null;
+
       const parts = token.split('.');
       if (parts.length !== 3) return null;
 
@@ -53,9 +99,10 @@ const AUTH = {
       const signatureInput = `${headerB64}.${payloadB64}`;
 
       const encoder = new TextEncoder();
+      const secret = AUTH.getSecret();
       const key = await crypto.subtle.importKey(
         'raw',
-        encoder.encode(AUTH.getSecret()),
+        encoder.encode(secret),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['verify']
@@ -86,15 +133,30 @@ const AUTH = {
     return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
   },
 
+  invalidatedTokens: new Set(),
+
+  isTokenInvalidated(token) {
+    return AUTH.invalidatedTokens.has(token);
+  },
+
+  invalidateToken(token) {
+    AUTH.invalidatedTokens.add(token);
+  },
+
   setEnv(env) {
     AUTH.env = env;
   },
 
   getSecret() {
-    return AUTH.env?.JWT_SECRET || 'molipar-secret-key';
+    const secret = AUTH.env?.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET no configurado. Ejecutá: npx wrangler secret put JWT_SECRET');
+    }
+    return secret;
   },
 };
 
 AUTH.env = null;
 
+export { validateTableName };
 export default AUTH;

@@ -141,6 +141,7 @@ export async function handleContact(env, settings) {
           <iframe
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d-55.7375!3d-25.4167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjXCsDI1JzAwLjAiUyA1NcKwNDQnMTUuMCJX!5e0!3m2!1ses-419!2spy!4v1"
             width="100%" height="400" style="border:0; display: block;"
+            sandbox="allow-scripts allow-same-origin"
             allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
             title="Ubicación de Molipar - ${settings.address || 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9)'}">
           </iframe>

@@ -1,3 +1,13 @@
+import { validateTableName } from './auth.js';
+
+const VALID_COLUMN_RE = /^[a-z_][a-z0-9_]*$/;
+
+function validateColumnName(name) {
+  if (!VALID_COLUMN_RE.test(name)) {
+    throw new Error(`Nombre de columna inválido: ${name}`);
+  }
+}
+
 const DB = {
   async query(sql, params = []) {
     const result = await DB.env.DB.prepare(sql).bind(...params).all();
@@ -15,7 +25,9 @@ const DB = {
   },
 
   async insert(table, data) {
+    validateTableName(table);
     const keys = Object.keys(data);
+    keys.forEach(validateColumnName);
     const values = Object.values(data);
     const placeholders = keys.map(() => '?').join(', ');
     const columns = keys.join(', ');
@@ -25,7 +37,10 @@ const DB = {
   },
 
   async update(table, data, whereKey, whereValue) {
+    validateTableName(table);
+    validateColumnName(whereKey);
     const keys = Object.keys(data);
+    keys.forEach(validateColumnName);
     const values = Object.values(data);
     const setClause = keys.map(k => `${k} = ?`).join(', ');
     const sql = `UPDATE ${table} SET ${setClause}, updated_at = datetime('now') WHERE ${whereKey} = ?`;
@@ -34,6 +49,8 @@ const DB = {
   },
 
   async delete(table, key, value) {
+    validateTableName(table);
+    validateColumnName(key);
     const sql = `DELETE FROM ${table} WHERE ${key} = ?`;
     const result = await DB.env.DB.prepare(sql).bind(value).run();
     return result;
