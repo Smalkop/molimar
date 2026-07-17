@@ -39,11 +39,19 @@ const salesRegions = [
     title: 'Gran Asunción y Central',
     phone: '+595 981 044447',
     localities: [
-      'Mariano Roque Alonso, San Lorenzo, Ñemby, San Antonio',
-      'Capiatá, Limpio, Ypané, J. Augusto Saldívar',
+      'San Lorenzo, Ñemby, San Antonio',
+      'Capiatá, Ypané, J. Augusto Saldívar',
       'Itauguá, Ypacaraí, Nueva Italia',
-      'Zona Chaco / Presidente Hayes: Remancito, Villa Hayes, Benjamín Aceval, Cerrito',
-      'Zona Cordillera y Paraguarí: Emboscada, Nueva Colombia, Caacupé, Tobatí, Pirayú',
+      'Zona Cordillera y Paraguarí: Nueva Colombia, Caacupé, Pirayú',
+    ],
+  },
+  {
+    title: 'Zona Norte, Chaco y Cordillera',
+    phone: '+595 983 665999',
+    localities: [
+      'Mariano Roque Alonso, Limpio',
+      'Zona Chaco / Presidente Hayes: Remansito, Villa Hayes, Benjamín Aceval, Cerrito',
+      'Emboscada, Tobatí',
     ],
   },
 ];
