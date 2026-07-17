@@ -238,7 +238,7 @@ function Homepage() {
       </SectionWipe>
 
       {/* Presentation */}
-      <SectionWipe className="py-24 bg-white">
+      <SectionWipe animateOnMount={true} className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div variants={fadeLeft} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}>
@@ -269,7 +269,7 @@ function Homepage() {
       <Catalog harinas={harinas} fideos={fideos} whatsapp={wa} />
 
       {/* Benefits */}
-      <SectionWipe className="py-24 bg-white">
+      <SectionWipe animateOnMount={true} className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
             <span className="text-primary-600 font-semibold text-sm tracking-wider uppercase">Beneficios</span>
@@ -326,5 +326,9 @@ function Homepage() {
   );
 }
 
-const root = createRoot(document.getElementById('homepage-root'));
-root.render(<Homepage />);
+try {
+  const root = createRoot(document.getElementById('homepage-root'));
+  root.render(<Homepage />);
+} catch (error) {
+  console.error('Error rendering homepage:', error);
+}
