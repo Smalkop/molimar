@@ -231,7 +231,7 @@ export async function handleAdminProducts(env, user) {
           if (data.main_image) {
             const prev = document.getElementById('main-image-preview');
             prev.classList.remove('hidden');
-            prev.querySelector('img').src = '/media/' + data.main_image;
+            prev.querySelector('img').src = data.main_image.startsWith('/') || data.main_image.startsWith('http') ? data.main_image : '/media/' + data.main_image;
           }
 
           if (data.presentations) {
