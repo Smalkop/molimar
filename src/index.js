@@ -16,6 +16,7 @@ import { handleAdminProducts, handleAdminProductsApi } from './routes/admin/prod
 import { handleAdminUsers, handleAdminUsersApi } from './routes/admin/users.js';
 import { handleAdminSettings, handleAdminSettingsApi } from './routes/admin/settings.js';
 import { handleAdminMessages, handleAdminMessagesApi, handleAdminMessagesRead } from './routes/admin/messages.js';
+import { handleAdminDirectSales, handleAdminDirectSalesApi } from './routes/admin/direct-sales.js';
 
 import { htmlResponse, jsonResponse, redirectResponse, optionsResponse, securityHeaders } from './utils/html.js';
 import { requireAdmin } from './middleware/auth.js';
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS site_settings (id INTEGER PRIMARY KEY AUTOINCREMENT, 
 CREATE INDEX IF NOT EXISTS idx_settings_key ON site_settings(setting_key);
 CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, subject TEXT, message TEXT NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_messages_read ON contact_messages(is_read);
+CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
 `;
 
 const SEED_SQL = `
@@ -217,6 +219,26 @@ async function ensureDatabase(env) {
     }
   } catch (e) { console.error('Error checking migration 003:', e); }
 
+  // Create sales_regions table for existing DBs
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating sales_regions:', e); }
+
+  // Seed sales_regions if empty
+  try {
+    const count = await env.DB.prepare('SELECT COUNT(*) as c FROM sales_regions').first();
+    if (count.c === 0) {
+      const regions = [
+        { title: 'Acceso desde Guairá', phone: '+595 981 659994', localities: ['Mauricio José Troche (Ruta PY02)','Repatriación','Caaguazú','San Pedro y Canindeyú: San Joaquín, Vaquería, Capiíbary, Curuguaty'], sort_order: 1 },
+        { title: 'Alto Paraná Norte y Centro (Ruta PY07)', phone: '+595 981 199932', localities: ['Itakyry','Hernandarias','Ciudad del Este','Itapúa (Ruta PY06): Km 30 (Minga Guazú), Tavapy, Santa Rita, Encarnación','Caaguazú y Guairá (Ruta PY02): Tembiaporá, 3 de Febrero, Coronel Oviedo, Santa Teresa, Independencia'], sort_order: 2 },
+        { title: 'Ruta PY02 (Dr. J. L. Mallorquín hasta Eusebio Ayala)', phone: '+595 984 176372', localities: ['Dr. Juan León Mallorquín','Juan Emilio O\'Leary','San José de los Arroyos','Eusebio Ayala','San Pedro y Canindeyú: Mbutuy, Capiíbary, Yasy Cañy, Laguna Pacova, Guayaibí','Paraguarí y Caazapá: Paraguarí, Quiindy, Caazapá, Yuty'], sort_order: 3 },
+        { title: 'Gran Asunción y Central', phone: '+595 981 044447', localities: ['San Lorenzo, Ñemby, San Antonio','Capiatá, Ypané, J. Augusto Saldívar','Itauguá, Ypacaraí, Nueva Italia','Zona Cordillera y Paraguarí: Nueva Colombia, Caacupé, Pirayú'], sort_order: 4 },
+        { title: 'Zona Norte, Chaco y Cordillera', phone: '+595 983 665999', localities: ['Mariano Roque Alonso, Limpio','Zona Chaco / Presidente Hayes: Remansito, Villa Hayes, Benjamín Aceval, Cerrito','Emboscada, Tobatí'], sort_order: 5 },
+      ];
+      for (const r of regions) {
+        await env.DB.prepare('INSERT INTO sales_regions (title, phone, localities, sort_order) VALUES (?, ?, ?, ?)').bind(r.title, r.phone, JSON.stringify(r.localities), r.sort_order).all();
+      }
+    }
+  } catch (e) { console.error('Error seeding sales_regions:', e); }
+
   // Gallery images for existing harinas (run on every startup, cleanup + reinsert)
   try {
     await env.DB.prepare("DELETE FROM product_images WHERE product_id = 1 AND original_path IN ('/images/harina-000-25kg-b.jpg','/images/harina-000-50kg-b.jpg','/images/harina-000-0000-5kg-pack.jpg','/images/harina-000-nutricional.jpg')").all();
@@ -345,6 +367,13 @@ export default {
     if (pathname.startsWith('/admin/api/mensajes') && method === 'GET') {
       const id = pathname.replace('/admin/api/mensajes', '').replace(/^\//, '') || null;
       return handleAdminMessagesApi(env, id);
+    }
+
+    if (pathname === '/admin/venta-directa' && method === 'GET') return handleAdminDirectSales(env, auth.user);
+
+    if (pathname.startsWith('/admin/api/venta-directa')) {
+      const id = pathname.replace('/admin/api/venta-directa', '').replace(/^\//, '') || null;
+      return handleAdminDirectSalesApi(request, env, id);
     }
 
     // ===== 404 =====

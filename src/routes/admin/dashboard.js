@@ -84,6 +84,7 @@ async function adminLayout(content, user) {
   const menuItems = [
     { href: '/admin', label: 'Dashboard', icon: 'home' },
     { href: '/admin/productos', label: 'Productos', icon: 'box' },
+    { href: '/admin/venta-directa', label: 'Venta Directa', icon: 'users' },
     { href: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
     { href: '/admin/configuracion', label: 'Configuración', icon: 'settings' },
     { href: '/admin/mensajes', label: 'Mensajes', icon: 'mail' },
