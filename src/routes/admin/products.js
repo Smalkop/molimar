@@ -141,8 +141,28 @@ export async function handleAdminProducts(env, user) {
               <label class="block text-sm font-medium text-gray-700 mb-2">Imagen Principal</label>
               <input type="file" id="product-main-image" name="main_image" accept="image/*" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
               <div id="main-image-preview" class="mt-2 hidden">
-                <img src="" alt="Preview" class="h-32 rounded-lg object-cover shadow-sm">
+                <div class="relative inline-block cursor-crosshair group" id="focal-container">
+                  <img src="" alt="Preview" id="focal-image" class="h-48 rounded-lg shadow-sm" style="object-fit: cover;">
+                  <div id="focal-marker" class="absolute w-6 h-6 -ml-3 -mt-3 rounded-full border-2 border-white shadow-lg pointer-events-none hidden" style="background: rgba(0,0,0,0.4); top:50%; left:50%;">
+                    <div class="absolute inset-0 flex items-center justify-center"><div class="w-1 h-1 rounded-full bg-white"></div></div>
+                  </div>
+                  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center">
+                    <span class="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">Click para definir punto focal</span>
+                  </div>
+                  <input type="hidden" id="product-crop-x" name="crop_x" value="50">
+                  <input type="hidden" id="product-crop-y" name="crop_y" value="50">
+                </div>
               </div>
+              <div class="mt-1 flex items-center space-x-2 text-xs text-gray-400">
+                <span>Punto focal:</span>
+                <span id="focal-coords">50%, 50%</span>
+                <button type="button" onclick="resetFocal()" class="text-primary-600 hover:text-primary-700 underline ml-2">Restablecer</button>
+              </div>
+            </div>
+            <!-- Lightbox modal -->
+            <div id="lightbox-modal" class="fixed inset-0 z-[100] bg-black/90 hidden items-center justify-center" onclick="closeLightbox(event)">
+              <button type="button" onclick="closeLightbox()" class="absolute top-4 right-4 text-white/70 hover:text-white text-3xl leading-none">&times;</button>
+              <img id="lightbox-image" src="" alt="Vista ampliada" class="max-w-[90vw] max-h-[90vh] object-contain">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Galería de Imágenes</label>
@@ -201,10 +221,55 @@ export async function handleAdminProducts(env, user) {
           reader.onload = function(ev) {
             const preview = document.getElementById('main-image-preview');
             preview.classList.remove('hidden');
-            preview.querySelector('img').src = ev.target.result;
+            const img = document.getElementById('focal-image');
+            img.src = ev.target.result;
+            img.onload = function() {
+              resetFocal();
+              document.getElementById('focal-marker').classList.remove('hidden');
+            };
           };
           reader.readAsDataURL(file);
         }
+      });
+
+      function resetFocal() {
+        document.getElementById('product-crop-x').value = 50;
+        document.getElementById('product-crop-y').value = 50;
+        document.getElementById('focal-marker').style.top = '50%';
+        document.getElementById('focal-marker').style.left = '50%';
+        document.getElementById('focal-coords').textContent = '50%, 50%';
+      }
+
+      function openLightbox(src) {
+        document.getElementById('lightbox-image').src = src;
+        document.getElementById('lightbox-modal').classList.remove('hidden');
+        document.getElementById('lightbox-modal').classList.add('flex');
+      }
+
+      function closeLightbox(e) {
+        if (e && e.target !== e.currentTarget) return;
+        document.getElementById('lightbox-modal').classList.add('hidden');
+        document.getElementById('lightbox-modal').classList.remove('flex');
+      }
+
+      document.getElementById('focal-container')?.addEventListener('click', function(e) {
+        const img = document.getElementById('focal-image');
+        if (!img.src) return;
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        const rect = img.getBoundingClientRect();
+        const xPct = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+        const yPct = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+        document.getElementById('product-crop-x').value = Math.max(0, Math.min(100, xPct));
+        document.getElementById('product-crop-y').value = Math.max(0, Math.min(100, yPct));
+        document.getElementById('focal-marker').style.left = xPct + '%';
+        document.getElementById('focal-marker').style.top = yPct + '%';
+        document.getElementById('focal-coords').textContent = xPct + '%, ' + yPct + '%';
+      });
+
+      document.getElementById('focal-image')?.addEventListener('dblclick', function(e) {
+        e.stopPropagation();
+        const src = this.src;
+        if (src) openLightbox(src);
       });
 
       async function editProduct(id) {
@@ -231,7 +296,18 @@ export async function handleAdminProducts(env, user) {
           if (data.main_image) {
             const prev = document.getElementById('main-image-preview');
             prev.classList.remove('hidden');
-            prev.querySelector('img').src = data.main_image.startsWith('/') || data.main_image.startsWith('http') ? data.main_image : '/media/' + data.main_image;
+            const img = document.getElementById('focal-image');
+            img.src = data.main_image.startsWith('/') || data.main_image.startsWith('http') ? data.main_image : '/media/' + data.main_image;
+            img.onload = function() {
+              const cx = parseInt(data.crop_x) || 50;
+              const cy = parseInt(data.crop_y) || 50;
+              document.getElementById('product-crop-x').value = cx;
+              document.getElementById('product-crop-y').value = cy;
+              document.getElementById('focal-marker').style.left = cx + '%';
+              document.getElementById('focal-marker').style.top = cy + '%';
+              document.getElementById('focal-coords').textContent = cx + '%, ' + cy + '%';
+              document.getElementById('focal-marker').classList.remove('hidden');
+            };
           }
 
           if (data.presentations) {
@@ -261,6 +337,8 @@ export async function handleAdminProducts(env, user) {
         formData.append('short_description', document.getElementById('product-short-desc').value);
         formData.append('full_description', document.getElementById('product-full-desc').value);
         formData.append('nutritional_info', document.getElementById('product-nutrition').value);
+        formData.append('crop_x', document.getElementById('product-crop-x').value);
+        formData.append('crop_y', document.getElementById('product-crop-y').value);
         formData.append('presentations', document.getElementById('product-presentations').value);
 
         const mainImg = document.getElementById('product-main-image').files[0];
@@ -336,6 +414,8 @@ export async function handleAdminProductsApi(request, env, id) {
         nutritional_info: sanitizeString(formData.get('nutritional_info') || ''),
         status: formData.get('status') || 'active',
         sort_order: parseInt(formData.get('sort_order')) || 0,
+        crop_x: parseInt(formData.get('crop_x')) || 50,
+        crop_y: parseInt(formData.get('crop_y')) || 50,
       };
 
       const result = await DB.insert('products', productData);
@@ -407,6 +487,8 @@ export async function handleAdminProductsApi(request, env, id) {
         nutritional_info: sanitizeString(formData.get('nutritional_info') || ''),
         status: formData.get('status') || 'active',
         sort_order: parseInt(formData.get('sort_order')) || 0,
+        crop_x: parseInt(formData.get('crop_x')) || 50,
+        crop_y: parseInt(formData.get('crop_y')) || 50,
       };
 
       await DB.update('products', productData, 'id', parseInt(id));

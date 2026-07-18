@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS product_types (id INTEGER PRIMARY KEY AUTOINCREMENT, 
 CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, product_type_id INTEGER NOT NULL, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_type_id) REFERENCES product_types(id) ON DELETE CASCADE);
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_categories_type ON categories(product_type_id);
-CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, product_type_id INTEGER NOT NULL, category_id INTEGER, short_description TEXT, full_description TEXT, nutritional_info TEXT, status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')), sort_order INTEGER NOT NULL DEFAULT 0, main_image TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_type_id) REFERENCES product_types(id) ON DELETE CASCADE, FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL);
+CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, product_type_id INTEGER NOT NULL, category_id INTEGER, short_description TEXT, full_description TEXT, nutritional_info TEXT, status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')), sort_order INTEGER NOT NULL DEFAULT 0, main_image TEXT, crop_x INTEGER NOT NULL DEFAULT 50, crop_y INTEGER NOT NULL DEFAULT 50, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_type_id) REFERENCES product_types(id) ON DELETE CASCADE, FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_type ON products(product_type_id);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
@@ -121,6 +121,32 @@ INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt
 INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13);
 `;
 
+const MIGRATE_003_SQL = `
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (3, 'Fideos Apetito - Tallarín', 'apetito-tallarin', 2, 5, 'Tallarines de pasta de sémola, cocción rápida y textura firme.', 'Tallarines elaborados con sémola de trigo seleccionada. Perfectos para todo tipo de salsas. Presentación de 400g.', 'active', 1, '/images/fideos/apetito-tallarin.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (4, 'Fideos Apetito - Spaguetti', 'apetito-spaguetti', 2, 5, 'Spaguetti de pasta de sémola, el clásico de la cocina italiana.', 'Spaguetti de sémola de trigo de alta calidad. Cocción pareja y textura al dente. Presentación de 400g.', 'active', 2, '/images/fideos/apetito-spaguetti.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (5, 'Fideos Apetito - Tirabuzón', 'apetito-tirabuzon', 2, 4, 'Tirabuzones de pasta de sémola, ideales para ensaladas de pasta y salsas espesas.', 'Tirabuzones de sémola de trigo. Su forma helicoidal atrapa las salsas perfectamente. Presentación de 400g.', 'active', 3, '/images/fideos/apetito-tirabuzon.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (6, 'Fideos Apetito - Cinta Ancha', 'apetito-cinta-ancha', 2, 6, 'Cinta ancha de pasta de sémola, ideal para lasañas y pastas horneadas.', 'Cinta ancha de sémola de trigo. Perfecta para lasañas, pastelones y platos horneados. Presentación de 400g.', 'active', 4, '/images/fideos/apetito-cinta-ancha.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (7, 'Fideos Apetito - Cortadito', 'apetito-cortadito', 2, 4, 'Cortaditos de pasta de sémola, el acompañante ideal para sopas y guisos.', 'Cortaditos de sémola de trigo. Ideales para sopas, guisos y caldos. Cocción rápida. Presentación de 400g.', 'active', 5, '/images/fideos/apetito-cortadito.jpg');
+
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (3, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (4, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (5, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (6, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (7, 'Paquete de 400g', '400 g', NULL, 1, 1);
+
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (3, 'main', '/images/fideos/apetito-tallarin.jpg', 'Fideos Apetito Tallarín', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (4, 'main', '/images/fideos/apetito-spaguetti.jpg', 'Fideos Apetito Spaguetti', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (5, 'main', '/images/fideos/apetito-tirabuzon.jpg', 'Fideos Apetito Tirabuzón', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (6, 'main', '/images/fideos/apetito-cinta-ancha.jpg', 'Fideos Apetito Cinta Ancha', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (7, 'main', '/images/fideos/apetito-cortadito.jpg', 'Fideos Apetito Cortadito', 1);
+
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (3, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (4, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (5, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (6, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (7, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+`;
+
 let DB_INITIALIZED = false;
 
 const SETTING_UPDATES = {
@@ -175,6 +201,35 @@ async function ensureDatabase(env) {
       await env.DB.prepare("UPDATE site_settings SET setting_value = ?, updated_at = datetime('now') WHERE setting_key = ?").bind(val, key).all();
     } catch {}
   }
+
+  // Add crop columns to existing products table (safe to re-run)
+  try { await env.DB.prepare("ALTER TABLE products ADD COLUMN crop_x INTEGER DEFAULT 50").all(); } catch {}
+  try { await env.DB.prepare("ALTER TABLE products ADD COLUMN crop_y INTEGER DEFAULT 50").all(); } catch {}
+
+  // Migrate 003: insert Fideos Apetito products and gallery images if missing
+  try {
+    const existing = await env.DB.prepare("SELECT id FROM products WHERE slug = ?").bind('apetito-tallarin').first();
+    if (!existing) {
+      const migrate003Stmts = MIGRATE_003_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
+      for (const stmt of migrate003Stmts) {
+        try { await env.DB.prepare(stmt).all(); } catch (e) { console.error('Migration 003 error:', e); }
+      }
+    }
+  } catch (e) { console.error('Error checking migration 003:', e); }
+
+  // Gallery images for existing harinas (run on every startup, cleanup + reinsert)
+  try {
+    await env.DB.prepare("DELETE FROM product_images WHERE product_id = 1 AND original_path IN ('/images/harina-000-25kg-b.jpg','/images/harina-000-50kg-b.jpg','/images/harina-000-0000-5kg-pack.jpg','/images/harina-000-nutricional.jpg')").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-25kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 25kg', 10)").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-50kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 50kg', 11)").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-0000-5kg-pack.jpg', 'Harina de Trigo Tipo 000 - Pack 5kg', 12)").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-nutricional.jpg', 'Harina de Trigo Tipo 000 - Información Nutricional', 13)").all();
+    await env.DB.prepare("DELETE FROM product_images WHERE product_id = 2 AND original_path IN ('/images/harina-0000-25kg-b.jpg','/images/harina-0000-50kg-b.jpg','/images/harina-0000-5kg-b.jpg','/images/harina-0000-nutricional.jpg')").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-25kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 25kg', 10)").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-50kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 50kg', 11)").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-5kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 5kg', 12)").all();
+    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13)").all();
+  } catch (e) { console.error('Error updating harina gallery:', e); }
 
   DB_INITIALIZED = true;
 }

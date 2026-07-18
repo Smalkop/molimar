@@ -62,7 +62,7 @@ export async function handleProducts(env, settings) {
               ${type.products.length > 0 ? type.products.map(product => `
                 <div class="card-hover bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 group">
                   <div class="relative h-56 overflow-hidden bg-gray-100">
-                    <img src="${imgUrl(product.main_image)}" alt="${escapeHtml(product.name)}" class="card-image w-full h-full object-cover" loading="lazy">
+                    <img src="${imgUrl(product.main_image)}" alt="${escapeHtml(product.name)}" class="card-image w-full h-full object-cover" style="object-position:${product.crop_x || 50}% ${product.crop_y || 50}%" loading="lazy">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                       <a href="https://wa.me/${normalizeWhatsApp(settings.whatsapp) || '595986288006'}?text=${encodeURIComponent('Hola, quiero información sobre ' + product.name)}"
@@ -170,7 +170,7 @@ export async function handleProductDetail(env, settings, slug) {
           </div>
           <div class="animate-fade-right">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-2xl bg-gray-800">
-              <img src="${imgUrl(product.main_image)}" alt="${product.name}" class="w-full h-full object-cover card-image" data-lightbox="${imgUrl(product.main_image)}">
+              <img src="${imgUrl(product.main_image)}" alt="${product.name}" class="w-full h-full object-cover card-image" style="object-position:${product.crop_x || 50}% ${product.crop_y || 50}%" data-lightbox="${imgUrl(product.main_image)}">
             </div>
           </div>
         </div>
