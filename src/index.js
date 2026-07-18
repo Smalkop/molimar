@@ -84,6 +84,41 @@ INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt
 INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-50kg.jpg', 'Harina de Trigo Tipo 000 - Presentación 50kg', 3);
 INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'main', '/images/harina-0000.jpg', 'Harina de Trigo Tipo 0000 Molipar', 1);
 INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-label.jpg', 'Harina de Trigo Tipo 0000 - Información nutricional', 2);
+
+-- Fideos Apetito
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (3, 'Fideos Apetito - Tallarín', 'apetito-tallarin', 2, 5, 'Tallarines de pasta de sémola, cocción rápida y textura firme.', 'Tallarines elaborados con sémola de trigo seleccionada. Perfectos para todo tipo de salsas. Presentación de 400g.', 'active', 1, '/images/fideos/apetito-tallarin.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (4, 'Fideos Apetito - Spaguetti', 'apetito-spaguetti', 2, 5, 'Spaguetti de pasta de sémola, el clásico de la cocina italiana.', 'Spaguetti de sémola de trigo de alta calidad. Cocción pareja y textura al dente. Presentación de 400g.', 'active', 2, '/images/fideos/apetito-spaguetti.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (5, 'Fideos Apetito - Tirabuzón', 'apetito-tirabuzon', 2, 4, 'Tirabuzones de pasta de sémola, ideales para ensaladas de pasta y salsas espesas.', 'Tirabuzones de sémola de trigo. Su forma helicoidal atrapa las salsas perfectamente. Presentación de 400g.', 'active', 3, '/images/fideos/apetito-tirabuzon.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (6, 'Fideos Apetito - Cinta Ancha', 'apetito-cinta-ancha', 2, 6, 'Cinta ancha de pasta de sémola, ideal para lasañas y pastas horneadas.', 'Cinta ancha de sémola de trigo. Perfecta para lasañas, pastelones y platos horneados. Presentación de 400g.', 'active', 4, '/images/fideos/apetito-cinta-ancha.jpg');
+INSERT OR IGNORE INTO products (id, name, slug, product_type_id, category_id, short_description, full_description, status, sort_order, main_image) VALUES (7, 'Fideos Apetito - Cortadito', 'apetito-cortadito', 2, 4, 'Cortaditos de pasta de sémola, el acompañante ideal para sopas y guisos.', 'Cortaditos de sémola de trigo. Ideales para sopas, guisos y caldos. Cocción rápida. Presentación de 400g.', 'active', 5, '/images/fideos/apetito-cortadito.jpg');
+
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (3, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (4, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (5, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (6, 'Paquete de 400g', '400 g', NULL, 1, 1);
+INSERT OR IGNORE INTO product_presentations (product_id, name, weight, price, is_primary, sort_order) VALUES (7, 'Paquete de 400g', '400 g', NULL, 1, 1);
+
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (3, 'main', '/images/fideos/apetito-tallarin.jpg', 'Fideos Apetito Tallarín', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (4, 'main', '/images/fideos/apetito-spaguetti.jpg', 'Fideos Apetito Spaguetti', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (5, 'main', '/images/fideos/apetito-tirabuzon.jpg', 'Fideos Apetito Tirabuzón', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (6, 'main', '/images/fideos/apetito-cinta-ancha.jpg', 'Fideos Apetito Cinta Ancha', 1);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (7, 'main', '/images/fideos/apetito-cortadito.jpg', 'Fideos Apetito Cortadito', 1);
+
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (3, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (4, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (5, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (6, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (7, 'gallery', '/images/fideos/apetito-collage.jpg', 'Fideos Apetito - Todas las variedades', 2);
+
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-25kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 25kg', 10);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-50kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 50kg', 11);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-0000-5kg-pack.jpg', 'Harina de Trigo Tipo 000 - Pack 5kg', 12);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-nutricional.jpg', 'Harina de Trigo Tipo 000 - Información Nutricional', 13);
+
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-25kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 25kg', 10);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-50kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 50kg', 11);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-5kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 5kg', 12);
+INSERT OR IGNORE INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13);
 `;
 
 let DB_INITIALIZED = false;
