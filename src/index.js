@@ -115,24 +115,25 @@ async function ensureDatabase(env) {
     for (const stmt of seedStmts) {
       try { await env.DB.prepare(stmt).all(); } catch (e) { console.error('Seed init error:', e); }
     }
-
-    try {
-      const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind('admin@molipar.com').first();
-      if (!existing) {
-        const pwdHash = await AUTH.hashPassword('admin123');
-        await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', pwdHash, 'admin').all();
-        try {
-          await env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'false', 'security')").all();
-        } catch {}
-      } else {
-        const stored = existing.password;
-        if (stored && stored.indexOf(':') === -1 && stored.length === 64) {
-          const pwdHash = await AUTH.hashPassword('admin123');
-          await env.DB.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(pwdHash, existing.id).all();
-        }
-      }
-    } catch (e) { console.error('Error creating admin user:', e); }
   }
+
+  // Admin user: always verify on every startup (creates if missing, upgrades hash if old format)
+  try {
+    const existing = await env.DB.prepare('SELECT id, password FROM users WHERE email = ?').bind('admin@molipar.com').first();
+    if (!existing) {
+      const pwdHash = await AUTH.hashPassword('admin123');
+      await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', pwdHash, 'admin').all();
+      try {
+        await env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'false', 'security')").all();
+      } catch {}
+    } else {
+      const stored = existing.password;
+      if (stored && stored.indexOf(':') === -1 && stored.length === 64) {
+        const pwdHash = await AUTH.hashPassword('admin123');
+        await env.DB.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(pwdHash, existing.id).all();
+      }
+    }
+  } catch (e) { console.error('Error verifying admin user:', e); }
 
   for (const [key, val] of Object.entries(SETTING_UPDATES)) {
     try {
