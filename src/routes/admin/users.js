@@ -18,7 +18,7 @@ export async function handleAdminUsers(env, user) {
           <h1 class="text-2xl font-bold text-gray-900">Usuarios</h1>
           <p class="text-gray-500 text-sm mt-1">${users.length} usuario(s)</p>
         </div>
-        <button onclick="openUserModal()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg">+ Nuevo Usuario</button>
+        ${users.length >= 2 ? '<span class="text-sm text-gray-400">Límite de 2 usuarios alcanzado</span>' : '<button onclick="openUserModal()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg">+ Nuevo Usuario</button>'}
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -139,6 +139,8 @@ export async function handleAdminUsersApi(request, env, id) {
   if (request.method === 'POST' && !id) {
     const data = await request.json();
     if (!data.name || !data.email || !data.password) return jsonResponse({ error: 'Nombre, email y contraseña requeridos' }, 400);
+    const count = await DB.get('SELECT COUNT(*) as c FROM users');
+    if (count.c >= 2) return jsonResponse({ error: 'Límite alcanzado: máximo 2 usuarios permitidos' }, 400);
     const existing = await DB.get('SELECT id FROM users WHERE email = ?', [data.email]);
     if (existing) return jsonResponse({ error: 'Email ya registrado' }, 400);
 
