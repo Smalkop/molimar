@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS site_settings (id INTEGER PRIMARY KEY AUTOINCREMENT, 
 CREATE INDEX IF NOT EXISTS idx_settings_key ON site_settings(setting_key);
 CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, subject TEXT, message TEXT NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_messages_read ON contact_messages(is_read);
-CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
 `;
 
 const SEED_SQL = `
@@ -220,7 +220,8 @@ async function ensureDatabase(env) {
   } catch (e) { console.error('Error checking migration 003:', e); }
 
   // Create sales_regions table for existing DBs
-  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating sales_regions:', e); }
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating sales_regions:', e); }
+  try { await env.DB.prepare("ALTER TABLE sales_regions ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime('now'))").all(); } catch {}
 
   // Seed sales_regions if empty
   try {
