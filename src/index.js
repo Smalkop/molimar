@@ -221,7 +221,7 @@ async function ensureDatabase(env) {
 
   // Create sales_regions table for existing DBs
   try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating sales_regions:', e); }
-  try { await env.DB.prepare("ALTER TABLE sales_regions ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime('now'))").all(); } catch {}
+  try { await env.DB.prepare("ALTER TABLE sales_regions ADD COLUMN updated_at TEXT").all(); } catch {}
 
   // Seed sales_regions if empty
   try {
