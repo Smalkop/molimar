@@ -166,9 +166,13 @@ export async function handleAdminDirectSalesApi(request, env, id) {
   DB.setEnv(env);
 
   if (request.method === 'GET' && id) {
-    const region = await DB.get('SELECT * FROM sales_regions WHERE id = ?', [parseInt(id)]);
-    if (!region) return jsonResponse({ error: 'Región no encontrada' }, 404);
-    return jsonResponse(region);
+    try {
+      const region = await DB.get('SELECT * FROM sales_regions WHERE id = ?', [parseInt(id)]);
+      if (!region) return jsonResponse({ error: 'Región no encontrada' }, 404);
+      return jsonResponse(region);
+    } catch (e) {
+      return jsonResponse({ error: e.message || 'Error al obtener región' }, 500);
+    }
   }
 
   if (request.method === 'POST' && !id) {
