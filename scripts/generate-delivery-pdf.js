@@ -19,7 +19,18 @@ const PAGE_HEIGHT = 841.89;
 const MARGIN = 50;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
-let logoWidth = 0, logoHeight = 0;
+let pageNum = 1;
+
+function checkPageOverflow(doc, y, needed) {
+  if (y + needed > PAGE_HEIGHT - 50) {
+    addFooter(doc, pageNum);
+    doc.addPage();
+    pageNum++;
+    addHeader(doc);
+    return 60;
+  }
+  return y;
+}
 
 function wrapText(doc, text, x, y, maxWidth, lineHeight) {
   const paragraphs = text.split('\n');
@@ -30,6 +41,7 @@ function wrapText(doc, text, x, y, maxWidth, lineHeight) {
     for (const word of words) {
       const testLine = line ? line + ' ' + word : word;
       if (doc.widthOfString(testLine) > maxWidth && line) {
+        currentY = checkPageOverflow(doc, currentY, lineHeight);
         doc.text(line, x, currentY);
         currentY += lineHeight;
         line = word;
@@ -38,6 +50,7 @@ function wrapText(doc, text, x, y, maxWidth, lineHeight) {
       }
     }
     if (line) {
+      currentY = checkPageOverflow(doc, currentY, lineHeight);
       doc.text(line, x, currentY);
       currentY += lineHeight;
     }
@@ -57,6 +70,7 @@ function addFooter(doc, pageNum) {
 }
 
 function addSectionTitle(doc, text, y) {
+  y = checkPageOverflow(doc, y, 40);
   doc.fontSize(18).font('Helvetica-Bold').fillColor(COLOR_DARK);
   doc.text(text, MARGIN, y);
   doc.rect(MARGIN, y + 22, 60, 3).fill(COLOR_ACCENT);
@@ -65,23 +79,23 @@ function addSectionTitle(doc, text, y) {
 
 function addBodyText(doc, text, y) {
   doc.fontSize(10).font('Helvetica').fillColor('#374151');
-  const resultY = wrapText(doc, text, MARGIN, y, CONTENT_WIDTH, 14);
-  return resultY;
+  return wrapText(doc, text, MARGIN, y, CONTENT_WIDTH, 14);
 }
 
 function addBullet(doc, text, y, indent = 20) {
+  y = checkPageOverflow(doc, y, 16);
   doc.fontSize(10).font('Helvetica').fillColor('#374151');
   doc.circle(MARGIN + indent - 6, y + 4, 2).fill(COLOR_ACCENT);
   wrapText(doc, text, MARGIN + indent, y, CONTENT_WIDTH - indent, 14);
   return y + 18;
 }
 
-function addLabelValue(doc, label, value, y) {
-  doc.fontSize(10).font('Helvetica-Bold').fillColor(COLOR_DARK);
-  doc.text(label, MARGIN, y);
-  doc.font('Helvetica').fillColor('#374151');
-  doc.text(value, MARGIN + doc.widthOfString(label) + 5, y);
-  return y + 16;
+function addCheckItem(doc, text, y) {
+  y = checkPageOverflow(doc, y, 18);
+  doc.fontSize(10).font('Helvetica').fillColor('#374151');
+  doc.text('✓', MARGIN + 5, y);
+  wrapText(doc, text, MARGIN + 20, y, CONTENT_WIDTH - 20, 14);
+  return y + 18;
 }
 
 async function generatePDF() {
@@ -98,440 +112,203 @@ async function generatePDF() {
   const stream = fs.createWriteStream(OUTPUT_PATH);
   doc.pipe(stream);
 
-  let pageNum = 1;
+  pageNum = 1;
 
   // ─── COVER PAGE ───
   doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT).fill(COLOR_DARK);
+  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT * 0.42).fill(COLOR_PRIMARY);
 
-  // Diagonal accent
-  doc.save();
-  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT * 0.45).fill(COLOR_PRIMARY);
-  doc.restore();
-
-  // Logo
   if (fs.existsSync(LOGO_PATH)) {
     try {
-      const imgData = fs.readFileSync(LOGO_PATH);
-      doc.image(imgData, MARGIN, 60, { width: 180 });
-    } catch (e) {
-      // fallback
-    }
+      doc.image(fs.readFileSync(LOGO_PATH), MARGIN, 60, { width: 180 });
+    } catch (_) {}
   }
 
-  // Title
   doc.fontSize(32).font('Helvetica-Bold').fillColor('#ffffff');
-  doc.text('Informe de Entrega', MARGIN, 220);
-  doc.text('de Proyecto', MARGIN, 260);
+  doc.text('Informe de Entrega', MARGIN, 210);
+  doc.text('de Proyecto', MARGIN, 250);
 
   doc.fontSize(48).font('Helvetica-Bold').fillColor(COLOR_ACCENT);
-  doc.text('Molipar S.A.', MARGIN, 310);
+  doc.text('Molipar S.A.', MARGIN, 300);
 
-  // Separator
-  doc.rect(MARGIN, 375, 80, 3).fill(COLOR_ACCENT);
+  doc.rect(MARGIN, 365, 80, 3).fill(COLOR_ACCENT);
 
-  // Subtitle
   doc.fontSize(14).font('Helvetica').fillColor('#cbd5e1');
-  doc.text('Sitio Web Corporativo — Catálogo de Productos', MARGIN, 400);
-  doc.text('Panel de Administración — Venta Directa', MARGIN, 422);
+  doc.text('Sitio Web Corporativo — Catálogo de Productos', MARGIN, 390);
+  doc.text('Panel de Administración — Venta Directa', MARGIN, 412);
 
-  // Author info
   doc.fontSize(11).font('Helvetica').fillColor('#94a3b8');
-  doc.text('Desarrollado por:', MARGIN, 480);
+  doc.text('Desarrollado por:', MARGIN, 470);
   doc.fontSize(13).font('Helvetica-Bold').fillColor('#ffffff');
-  doc.text('Brahian González', MARGIN, 498);
+  doc.text('Brahian González', MARGIN, 488);
   doc.fontSize(10).font('Helvetica').fillColor('#94a3b8');
-  doc.text('Consultoría de Software & Arquitectura Serverless', MARGIN, 518);
-  doc.text('https://brahian.dev', MARGIN, 536);
+  doc.text('Consultoría de Software & Arquitectura Serverless', MARGIN, 508);
+  doc.text('https://brahian.dev', MARGIN, 526);
 
-  // Date
   const today = new Date().toLocaleDateString('es-PY', { year: 'numeric', month: 'long', day: 'numeric' });
   doc.fontSize(10).font('Helvetica').fillColor('#94a3b8');
-  doc.text(`Fecha de entrega: ${today}`, MARGIN, 580);
+  doc.text(`Fecha de entrega: ${today}`, MARGIN, 570);
 
   doc.addPage();
   pageNum++;
-
-  // ─── TABLE OF CONTENTS ───
   addHeader(doc);
-  let y = addSectionTitle(doc, 'Índice', 60);
-  const tocItems = [
-    '1. Resumen Ejecutivo',
-    '2. Alcance del Proyecto',
-    '3. Arquitectura del Sistema',
-    '4. Stack Tecnológico',
-    '5. Estructura del Código',
-    '6. Base de Datos',
-    '7. Funcionalidades Implementadas',
-    '8. Seguridad',
-    '9. Detalles de Despliegue',
-    '10. Inversión y Costos',
-    '11. Instrucciones de Mantenimiento',
-    '12. Conclusiones',
-    '13. Firmas',
-  ];
-  for (const item of tocItems) {
-    doc.fontSize(11).font('Helvetica').fillColor('#374151');
-    doc.text(item, MARGIN + 10, y);
-    y += 22;
-  }
-  addFooter(doc, pageNum);
+  let y;
 
-  // ─── 1. RESUMEN EJECUTIVO ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '1. Resumen Ejecutivo', 60);
-  y = addBodyText(doc, `Este documento describe la entrega formal del sitio web corporativo de Molipar S.A., una empresa paraguaya dedicada a la producción y comercialización de harinas y fideos. El proyecto fue desarrollado por Brahian González como consultor de software independiente.
+  // ─── 1. INFORMACIÓN DEL PROYECTO ───
+  y = addSectionTitle(doc, '1. Información del Proyecto', 60);
+  y = addBodyText(doc, `Se presenta la entrega formal del sitio web corporativo de Molipar S.A., empresa paraguaya dedicada a la producción y comercialización de harinas y fideos. El proyecto fue desarrollado por Brahian González.`, y + 10);
 
-El sitio web fue construido utilizando tecnologías modernas (Cloudflare Workers, React 19, TailwindCSS) y está desplegado en infraestructura serverless de Cloudflare, garantizando alta disponibilidad, rendimiento global y costos operativos mínimos.
-
-El sistema incluye un sitio público de 7 páginas (Inicio, Nosotros, Productos, Sucursales, Venta Directa, Calidad, Contacto) y un panel de administración completo con 7 secciones (Dashboard, Productos, Usuarios, Configuración, Mensajes, Venta Directa, Login).`, y + 10);
-  addFooter(doc, pageNum);
-
-  // ─── 2. ALCANCE DEL PROYECTO ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '2. Alcance del Proyecto', 60);
-  y = addBodyText(doc, 'El proyecto comprende el desarrollo completo de la presencia digital de Molipar S.A., incluyendo:', y + 10);
-  const alcanceItems = [
-    'Sitio web público responsivo con 7 secciones informativas y catálogo de productos.',
-    'Panel de administración con autenticación JWT para gestión de contenido.',
-    'Catálogo digital de harinas y fideos con imágenes, presentaciones y galería.',
-    'Sistema de venta directa con regiones, teléfonos y localidades.',
-    'Formulario de contacto con almacenamiento en base de datos.',
-    'Gestión de imágenes con procesamiento automático y almacenamiento en R2.',
-    'Panel de configuración del sitio (WhatsApp, teléfono, dirección, redes sociales, etc.).',
-    'SEO on-page con meta tags, Open Graph, Schema.org y sitemap XML.',
-  ];
-  for (const item of alcanceItems) {
-    y = addBullet(doc, item, y + 5);
-  }
-  addFooter(doc, pageNum);
-
-  // ─── 3. ARQUITECTURA ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '3. Arquitectura del Sistema', 60);
-  y = addBodyText(doc, 'El sistema utiliza una arquitectura serverless moderna basada en Cloudflare:', y + 10);
-
-  const archItems = [
-    'Cloudflare Workers: Ejecuta el servidor web en el edge de Cloudflare (300+ ubicaciones globales). Sin servidores que gestionar.',
-    'Cloudflare D1: Base de datos SQLite serverless con replicación global. Almacena productos, usuarios, mensajes, configuraciones y regiones de venta.',
-    'Cloudflare R2: Almacenamiento de objetos para imágenes de productos, fotos de galería, y assets estáticos (CSS, JS). Sin costos de salida.',
-    'Edge Computing: Todo el renderizado HTML ocurre en el edge de Cloudflare, minimizando la latencia.',
-    'React 19 + Framer Motion: La homepage utiliza React con animaciones, renderizado desde el servidor con datos inyectados.',
-  ];
-  for (const item of archItems) {
-    y = addBullet(doc, item, y + 5);
-  }
   y += 10;
-  y = addBodyText(doc, 'Flujo de una solicitud típica:', y + 5);
-  const flowItems = [
-    'Usuario visita https://molipar.smalkop.workers.dev',
-    'Cloudflare Worker recibe la solicitud en el edge más cercano.',
-    'El Worker consulta D1 (o caché), construye el HTML y responde.',
-    'Las imágenes se sirven desde R2 con caché en el edge de Cloudflare.',
+  y = addSectionTitle(doc, '2. Resumen del Proyecto', y + 5);
+  y = addBodyText(doc, 'El sitio web de Molipar S.A. incluye:', y + 10);
+
+  const summaryItems = [
+    'Sitio web público con presencia profesional en internet: página de inicio, historia de la empresa, catálogo de productos (harinas y fideos), sucursales, venta directa por regiones, calidad y contacto.',
+    'Panel de administración privado donde el personal de Molipar puede gestionar productos, ver mensajes de contacto, administrar usuarios, configurar datos de la empresa y gestionar regiones de venta directa.',
+    'Catálogo digital completo con imágenes, presentaciones y galería de fotos para cada producto.',
+    'Formulario de contacto que envía los mensajes directamente al panel de administración.',
+    'Diseño moderno y adaptado a celulares, tablets y computadoras.',
   ];
-  for (const item of flowItems) {
+  for (const item of summaryItems) {
     y = addBullet(doc, item, y + 5);
   }
-  addFooter(doc, pageNum);
 
-  // ─── 4. STACK TECNOLÓGICO ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '4. Stack Tecnológico', 60);
-  const techItems = [
-    ['Runtime:', 'Cloudflare Workers (JavaScript/ESM)'],
-    ['Base de datos:', 'Cloudflare D1 (SQLite serverless)'],
-    ['Storage:', 'Cloudflare R2 (objetos + estáticos)'],
-    ['Frontend:', 'React 19 + Framer Motion + TailwindCSS'],
-    ['Backend:', 'JavaScript vanilla (sin frameworks)'],
-    ['Autenticación:', 'JWT (HS256) con cookies httpOnly'],
-    ['Hash de passwords:', 'PBKDF2 (100,000 iteraciones)'],
-    ['Build:', 'esbuild + Tailwind CLI'],
-    ['Imágenes:', 'Procesamiento automático (original + medium + thumbnail)'],
-    ['SEO:', 'Meta tags, Open Graph, Schema.org JSON-LD, sitemap XML, robots.txt'],
-  ];
-  for (const [label, value] of techItems) {
-    y = addBullet(doc, `${label} ${value}`, y + 5);
-  }
-  addFooter(doc, pageNum);
+  // ─── 3. FUNCIONALIDADES ───
+  y += 10;
+  y = addSectionTitle(doc, '3. Funcionalidades del Sitio', y + 5);
+  y += 5;
 
-  // ─── 5. ESTRUCTURA DEL CÓDIGO ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '5. Estructura del Código', 60);
-  y = addBodyText(doc, 'El código fuente está organizado de la siguiente manera:', y + 10);
-
-  const codeStructure = [
-    'src/index.js              → Punto de entrada del Worker (ruteo principal)',
-    'src/routes/public/        → 7 páginas públicas (home, about, products, quality, contact, branches, direct-sales)',
-    'src/routes/admin/         → 7 módulos de administración (dashboard, products, users, settings, messages, direct-sales, login)',
-    'src/services/             → Servicios (database, auth, storage, image)',
-    'src/components/           → Componentes reutilizables (Layout, Header, Footer, Assets)',
-    'src/client/               → Código React (homepage.jsx → compilado a homepage.bundle.js)',
-    'src/middleware/            → Middleware de autenticación (requireAdmin)',
-    'src/utils/                → Utilidades (html, seo, validators)',
-    'static/                   → Assets estáticos (CSS, imágenes, JS de animaciones)',
-    'migrations/               → Migraciones SQL (esquema inicial, seed, fideos apetito)',
-    'scripts/                  → Scripts de build y deploy',
-  ];
-  for (const item of codeStructure) {
-    y = addBullet(doc, item, y + 5, 25);
-  }
-  addFooter(doc, pageNum);
-
-  // ─── 6. BASE DE DATOS ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '6. Base de Datos', 60);
-  y = addBodyText(doc, 'La base de datos utiliza Cloudflare D1 (SQLite serverless) con las siguientes tablas:', y + 10);
-
-  const tables = [
-    ['users', 'Usuarios del panel admin (id, name, email, password, role, active)'],
-    ['product_types', 'Tipos de producto (Harinas, Fideos)'],
-    ['categories', 'Categorías por tipo de producto'],
-    ['products', 'Productos (nombre, slug, descripción, imagen, activo)'],
-    ['product_presentations', 'Presentaciones por producto (nombre, peso, precio, activo)'],
-    ['product_images', 'Galería de imágenes por producto (original, thumb, medium)'],
-    ['site_settings', 'Configuraciones del sitio (clave/valor agrupadas por sección)'],
-    ['contact_messages', 'Mensajes del formulario de contacto'],
-    ['sales_regions', 'Regiones de venta directa (título, teléfono, localidades)'],
-  ];
-
-  doc.fontSize(9).font('Helvetica-Bold').fillColor(COLOR_DARK);
-  doc.text('Tabla', MARGIN, y);
-  doc.text('Descripción', MARGIN + 130, y);
-  doc.rect(MARGIN, y + 15, CONTENT_WIDTH, 1).fill(COLOR_BORDER);
+  doc.fontSize(12).font('Helvetica-Bold').fillColor(COLOR_DARK);
+  y = checkPageOverflow(doc, y, 20);
+  doc.text('Sitio Público (visible para todos los visitantes)', MARGIN, y);
   y += 22;
 
-  for (const [table, desc] of tables) {
-    doc.fontSize(9).font('Helvetica-Bold').fillColor(COLOR_PRIMARY);
-    doc.text(table, MARGIN, y);
-    doc.font('Helvetica').fillColor('#374151');
-    doc.text(desc, MARGIN + 130, y, { width: CONTENT_WIDTH - 130 });
-    y += 16;
-  }
-
-  addFooter(doc, pageNum);
-
-  // ─── 7. FUNCIONALIDADES ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '7. Funcionalidades Implementadas', 60);
-
-  const sections = [
-    {
-      title: '7.1 Sitio Público',
-      items: [
-        'Inicio: Hero con animaciones, contador de experiencia, productos destacados con presentaciones (píldoras), tarjetas animadas con React + Framer Motion.',
-        'Nosotros: Historia, misión/visión/valores, proceso de producción en 6 pasos con iconografía.',
-        'Productos: Listado completo con filtro por tipo, detalle individual con imágenes, presentaciones, galería y botón de WhatsApp.',
-        'Sucursales: Mapa de todas las sucursales con datos de contacto.',
-        'Venta Directa: Regiones de venta con teléfonos y localidades.',
-        'Calidad: Procesos de fabricación, certificaciones (ISO 22000, HACCP, Kosher, BPM), controles de calidad.',
-        'Contacto: Formulario con validación, almacenamiento en DB, enlace directo a WhatsApp.',
-      ],
-    },
-    {
-      title: '7.2 Panel de Administración',
-      items: [
-        'Dashboard: Estadísticas generales (total productos, harinas, fideos, mensajes nuevos).',
-        'Productos: CRUD completo con imágenes, presentaciones, galería, zoom de imagen principal.',
-        'Usuarios: CRUD con límite de 2 usuarios, roles (admin/editor).',
-        'Configuración: Edición de datos de empresa, contacto, redes sociales, hero, años de experiencia.',
-        'Mensajes: Bandeja de entrada con lectura, marcado como leído, eliminación.',
-        'Venta Directa: CRUD de regiones con teléfonos y localidades.',
-      ],
-    },
+  const publicFeatures = [
+    'Inicio: Portada principal con presentación de la empresa, productos destacados y enlaces a las secciones principales.',
+    'Nosotros: Historia de Molipar, misión, visión, valores y el proceso de producción.',
+    'Productos: Catálogo completo de harinas y fideos con fotos, presentaciones y galería de imágenes.',
+    'Sucursales: Direcciones y datos de contacto de todas las sucursales.',
+    'Venta Directa: Regiones habilitadas para venta directa con teléfonos de contacto.',
+    'Calidad: Información sobre certificaciones y controles de calidad.',
+    'Contacto: Formulario para que clientes envíen consultas directamente.',
   ];
-
-  for (const section of sections) {
-    y = addSectionTitle(doc, section.title, y + 5);
-    for (const item of section.items) {
-      y = addBullet(doc, item, y + 5);
-    }
-    y += 10;
-    if (y > 700) {
-      addFooter(doc, pageNum);
-      doc.addPage();
-      pageNum++;
-      addHeader(doc);
-      y = 60;
-    }
+  for (const item of publicFeatures) {
+    y = addBullet(doc, item, y + 3);
   }
-  addFooter(doc, pageNum);
 
-  // ─── 8. SEGURIDAD ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '8. Seguridad', 60);
-  const securityItems = [
-    'Autenticación JWT: Tokens firmados con HS256, expiración de 24 horas, invalidación en logout.',
-    'Rate Limiting: Máximo 5 intentos de login en 15 minutos para prevenir ataques de fuerza bruta.',
-    'Sanitización: Todos los inputs se sanitizan antes de almacenar (XSS prevention).',
-    'Validación: Validación de tipos de archivo (imágenes), tamaño máximo 10MB, validación de magic bytes.',
-    'SQL Injection: Todas las consultas usan parámetros preparados (?) en lugar de concatenación.',
-    'CORS: Cabeceras CORS configuradas con origen permitido específico.',
-    'CSP: Content Security Policy configurada para prevenir ataques XSS.',
-    'Cookies HttpOnly: El token JWT se almacena en cookie httpOnly, no accesible desde JavaScript.',
-    'Tablas sanitizadas: Validación de nombres de tabla y columna para prevenir inyección en queries dinámicas.',
+  y += 8;
+  doc.fontSize(12).font('Helvetica-Bold').fillColor(COLOR_DARK);
+  y = checkPageOverflow(doc, y, 20);
+  doc.text('Panel de Administración (acceso privado con usuario y contraseña)', MARGIN, y);
+  y += 22;
+
+  const adminFeatures = [
+    'Dashboard: Resumen general con estadísticas del sitio.',
+    'Productos: Agregar, editar y eliminar productos con imágenes y presentaciones.',
+    'Usuarios: Gestionar quién puede acceder al panel de administración.',
+    'Configuración: Editar datos de la empresa, contacto, WhatsApp, redes sociales y contenido de la portada.',
+    'Mensajes: Bandeja de entrada con los mensajes recibidos del formulario de contacto.',
+    'Venta Directa: Administrar las regiones de venta directa con sus teléfonos y localidades.',
   ];
-  for (const item of securityItems) {
-    y = addBullet(doc, item, y + 5);
+  for (const item of adminFeatures) {
+    y = addBullet(doc, item, y + 3);
   }
-  addFooter(doc, pageNum);
 
-  // ─── 9. DETALLES DE DESPLIEGUE ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '9. Detalles de Despliegue', 60);
-  y = addLabelValue(doc, 'URL de producción:', 'https://molipar.smalkop.workers.dev', y + 10);
-  y = addLabelValue(doc, 'Dominio personalizado:', 'https://molipar.com (configurable)', y + 5);
-  y = addLabelValue(doc, 'Infraestructura:', 'Cloudflare Workers (edge computing)', y + 5);
-  y = addLabelValue(doc, 'Base de datos:', 'Cloudflare D1 (SQLite serverless)', y + 5);
-  y = addLabelValue(doc, 'Almacenamiento:', 'Cloudflare R2 (bucket: productos-clientes)', y + 5);
-  y = addLabelValue(doc, 'Repositorio:', 'GitHub — https://github.com/Smalkop/molimar', y + 5);
-  y += 10;
-  y = addBodyText(doc, 'Comando para desplegar una nueva versión:', y + 5);
-  doc.fontSize(9).font('Courier').fillColor(COLOR_DARK);
-  doc.text('  npm run deploy', MARGIN, y, { width: CONTENT_WIDTH });
-  y += 20;
-  y = addBodyText(doc, 'Esto ejecuta: build de TailwindCSS → build del bundle React → upload de assets estáticos a R2 → deploy del Worker.', y);
+  // ─── 4. INVERSIÓN Y COSTOS ───
+  y += 15;
+  y = addSectionTitle(doc, '4. Inversión y Costos', y + 5);
+  y += 8;
 
-  addFooter(doc, pageNum);
+  // Main pricing card
+  y = checkPageOverflow(doc, y, 230);
+  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 225, 8).fill(COLOR_LIGHT_BG);
+  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 225, 8).lineWidth(1).stroke(COLOR_BORDER);
 
-  // ─── 10. INVERSIÓN Y COSTOS ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '10. Inversión y Costos', 60);
-  y += 10;
-
-  // Pricing card background
-  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 220, 8).fill(COLOR_LIGHT_BG);
-  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 220, 8).lineWidth(1).stroke(COLOR_BORDER);
-
-  // Title inside card
   doc.fontSize(16).font('Helvetica-Bold').fillColor(COLOR_DARK);
   doc.text('Inversión Total del Proyecto', MARGIN + 20, y + 20);
 
-  // Price
   doc.fontSize(36).font('Helvetica-Bold').fillColor(COLOR_PRIMARY);
   doc.text('Gs. 2.000.000', MARGIN + 20, y + 50);
 
   doc.fontSize(9).font('Helvetica').fillColor(COLOR_GRAY);
   doc.text('(Guaraníes — Dos Millones)', MARGIN + 20, y + 90);
 
-  // Divider
   doc.rect(MARGIN + 20, y + 110, CONTENT_WIDTH - 40, 1).fill(COLOR_BORDER);
 
-  // Detail
   doc.fontSize(10).font('Helvetica').fillColor('#374151');
   doc.text('El presupuesto incluye:', MARGIN + 20, y + 125);
-  doc.text('✓ Desarrollo completo del sitio web y panel de administración', MARGIN + 20, y + 145);
-  doc.text('✓ Dominio .com por 1 año (Gs. 150.000 incluidos en el total)', MARGIN + 20, y + 165);
-  doc.text('✓ Configuración de infraestructura Cloudflare', MARGIN + 20, y + 185);
-  doc.text('✓ Capacitación básica para uso del panel admin', MARGIN + 20, y + 205);
 
-  y += 240;
+  const includes = [
+    'Desarrollo completo del sitio web y panel de administración',
+    'Dominio .com por 1 año (Gs. 150.000 incluidos en el total)',
+    'Configuración de infraestructura y publicación en internet',
+    'Capacitación básica para uso del panel de administración',
+  ];
+  let iy = y + 148;
+  for (const item of includes) {
+    iy = addCheckItem(doc, item, iy);
+  }
 
-  // Domain renewal
-  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 100, 8).fill('#fffbeb');
-  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 100, 8).lineWidth(1).stroke('#fde68a');
+  y = iy + 25;
+
+  // Domain renewal card
+  y = checkPageOverflow(doc, y, 100);
+  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 95, 8).fill('#fffbeb');
+  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 95, 8).lineWidth(1).stroke('#fde68a');
   doc.fontSize(12).font('Helvetica-Bold').fillColor(COLOR_DARK);
   doc.text('Renovación Anual de Dominio', MARGIN + 20, y + 15);
   doc.fontSize(10).font('Helvetica').fillColor('#374151');
-  doc.text('El dominio debe renovarse cada año.', MARGIN + 20, y + 40);
+  doc.text('El dominio deberá renovarse cada año para mantener el sitio funcionando.', MARGIN + 20, y + 40);
   doc.fontSize(14).font('Helvetica-Bold').fillColor(COLOR_ACCENT);
-  doc.text('Gs. 20.000 / año', MARGIN + 20, y + 60);
+  doc.text('Gs. 20.000 / año', MARGIN + 20, y + 63);
   doc.fontSize(9).font('Helvetica').fillColor(COLOR_GRAY);
-  doc.text('(costo de gestión incluido)', MARGIN + 20, y + 80);
+  doc.text('(costo de gestión incluido)', MARGIN + 20, y + 82);
 
-  y += 120;
+  y += 115;
 
-  // Maintenance
-  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 130, 8).fill('#f0fdf4');
-  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 130, 8).lineWidth(1).stroke('#bbf7d0');
+  // Maintenance card
+  y = checkPageOverflow(doc, y, 125);
+  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 120, 8).fill('#f0fdf4');
+  doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 120, 8).lineWidth(1).stroke('#bbf7d0');
   doc.fontSize(12).font('Helvetica-Bold').fillColor(COLOR_DARK);
   doc.text('Mantenimiento Mensual (Opcional)', MARGIN + 20, y + 15);
   doc.fontSize(10).font('Helvetica').fillColor('#374151');
   doc.text('El mantenimiento mensual no es obligatorio. ', MARGIN + 20, y + 40);
-  doc.text('Incluye: actualizaciones de seguridad, contenido,', MARGIN + 20, y + 58);
-  doc.text('soporte técnico, backups y monitoreo.', MARGIN + 20, y + 76);
+  doc.text('Incluye: soporte técnico, actualizaciones de contenido,', MARGIN + 20, y + 58);
+  doc.text('backups de seguridad y monitoreo del sitio.', MARGIN + 20, y + 76);
   doc.fontSize(14).font('Helvetica-Bold').fillColor('#16a34a');
-  doc.text('Gs. 50.000 / mes', MARGIN + 20, y + 100);
+  doc.text('Gs. 50.000 / mes', MARGIN + 20, y + 98);
 
-  addFooter(doc, pageNum);
+  // ─── 5. RECOMENDACIONES ───
+  y += 145;
+  y = addSectionTitle(doc, '5. Recomendaciones', y + 5);
+  y += 5;
 
-  // ─── 11. INSTRUCCIONES DE MANTENIMIENTO ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '11. Instrucciones de Mantenimiento', 60);
-
-  const maintenanceItems = [
-    'Agregar producto: Ir a Admin → Productos → "Nuevo Producto". Completar nombre, descripción, tipo, imagen principal. Luego agregar presentaciones (peso + precio) y opcionalmente imágenes de galería.',
-    'Editar producto: En Admin → Productos, hacer clic en el lápiz del producto. Se puede cambiar imagen, descripción, presentaciones, galería.',
-    'Configurar sitio: Admin → Configuración. Allí se editan datos de empresa, contacto, WhatsApp, redes sociales, hero de portada, años de experiencia.',
-    'Ver mensajes: Admin → Mensajes. Los mensajes del formulario de contacto llegan aquí. Se pueden leer, marcar como leídos y eliminar.',
-    'Venta Directa: Admin → Venta Directa. Allí se gestionan las regiones con sus teléfonos y localidades.',
-    'Usuarios: Admin → Usuarios. Máximo 2 usuarios. Se pueden crear, editar roles y eliminar.',
-    'Desplegar cambios: En la terminal, ejecutar "npm run deploy" desde la carpeta del proyecto. Esto actualiza el sitio en producción.',
+  const recs = [
+    'Renovar el dominio cada año para evitar la pérdida del sitio web.',
+    'Realizar copias de seguridad periódicas de la base de datos.',
+    'Mantener las contraseñas del panel de administración en un lugar seguro.',
+    'Considerar el servicio de mantenimiento mensual para asegurar soporte continuo y actualizaciones.',
   ];
-  for (const item of maintenanceItems) {
-    y = addBullet(doc, item, y + 5);
+  for (const item of recs) {
+    y = addBullet(doc, item, y + 3);
   }
 
-  addFooter(doc, pageNum);
-
-  // ─── 12. CONCLUSIONES ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '12. Conclusiones', 60);
-  y = addBodyText(doc, `El sitio web de Molipar S.A. ha sido desarrollado exitosamente, cumpliendo con todos los requerimientos establecidos. La plataforma está completamente operativa y desplegada en producción.
-
-Tecnologías modernas y arquitectura serverless garantizan:
-
-• Rendimiento: Tiempos de carga rápidos gracias al edge computing de Cloudflare.
-• Escalabilidad: La infraestructura se escala automáticamente según la demanda.
-• Seguridad: Múltiples capas de seguridad implementadas (JWT, rate limiting, sanitización, CSP).
-• Mantenibilidad: Código modular y bien estructurado, fácil de mantener y extender.
-• Costos predecibles: Sin servidores que gestionar, costos basados en uso real.
-
-El panel de administración permite a Molipar S.A. gestionar su contenido de forma autónoma, sin necesidad de conocimientos técnicos avanzados.
-
-Se recomienda mantener el dominio renovado anualmente y considerar el servicio de mantenimiento mensual opcional para garantizar actualizaciones de seguridad y soporte continuo.`, y + 10);
-
-  addFooter(doc, pageNum);
-
-  // ─── 13. FIRMAS ───
-  doc.addPage();
-  pageNum++;
-  addHeader(doc);
-  y = addSectionTitle(doc, '13. Firmas', 60);
-  y += 10;
-  y = addBodyText(doc, 'Este documento certifica la entrega formal del proyecto a Molipar S.A. por parte del desarrollador.', y + 10);
+  // ─── 6. FIRMAS ───
   y += 20;
+  y = addSectionTitle(doc, '6. Firmas', y + 5);
+  y += 5;
+  y = addBodyText(doc, 'Este documento certifica la entrega formal del proyecto web de Molipar S.A., desarrollado por Brahian González. Ambas partes firman en conformidad.', y + 8);
+  y += 25;
 
-  // Separator line
+  y = checkPageOverflow(doc, y, 100);
   doc.rect(MARGIN, y, CONTENT_WIDTH, 1).fill(COLOR_BORDER);
   y += 15;
   doc.fontSize(10).font('Helvetica').fillColor(COLOR_GRAY);
   doc.text('Se firma en conformidad por ambas partes:', MARGIN, y);
   y += 40;
 
-  // Developer signature
+  y = checkPageOverflow(doc, y, 60);
   doc.rect(MARGIN, y, 200, 1).fill(COLOR_DARK);
   doc.fontSize(11).font('Helvetica-Bold').fillColor(COLOR_DARK);
   doc.text('Brahian González', MARGIN, y + 10);
@@ -539,7 +316,6 @@ Se recomienda mantener el dominio renovado anualmente y considerar el servicio d
   doc.text('Desarrollador / Consultor', MARGIN, y + 26);
   doc.text('brahian.dev', MARGIN, y + 38);
 
-  // Client signature
   doc.rect(PAGE_WIDTH - MARGIN - 200, y, 200, 1).fill(COLOR_DARK);
   doc.fontSize(11).font('Helvetica-Bold').fillColor(COLOR_DARK);
   doc.text('Molipar S.A.', PAGE_WIDTH - MARGIN - 200, y + 10);
@@ -549,14 +325,13 @@ Se recomienda mantener el dominio renovado anualmente y considerar el servicio d
 
   y += 100;
   doc.rect(MARGIN, y, CONTENT_WIDTH, 1).fill(COLOR_BORDER);
-  y += 20;
+  y += 18;
   doc.fontSize(9).font('Helvetica').fillColor(COLOR_GRAY);
   doc.text(`Fecha: ${today}`, MARGIN, y);
   doc.text('Versión del documento: 1.0', MARGIN, y + 14);
 
   addFooter(doc, pageNum);
 
-  // Finalize
   doc.end();
   stream.on('finish', () => {
     const stats = fs.statSync(OUTPUT_PATH);
