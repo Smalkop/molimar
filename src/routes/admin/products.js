@@ -146,8 +146,11 @@ export async function handleAdminProducts(env, user) {
                   <div id="focal-marker" class="absolute w-6 h-6 -ml-3 -mt-3 rounded-full border-2 border-white shadow-lg pointer-events-none hidden" style="background: rgba(0,0,0,0.4); top:50%; left:50%;">
                     <div class="absolute inset-0 flex items-center justify-center"><div class="w-1 h-1 rounded-full bg-white"></div></div>
                   </div>
+                  <button type="button" onclick="zoomMainImage()" class="absolute top-2 right-2 z-20 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" title="Ampliar imagen">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                  </button>
                   <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center">
-                    <span class="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">Click para definir punto focal</span>
+                    <span class="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">Click para definir punto focal · Click en 🔍 para ampliar</span>
                   </div>
                   <input type="hidden" id="product-crop-x" name="crop_x" value="50">
                   <input type="hidden" id="product-crop-y" name="crop_y" value="50">
@@ -271,6 +274,11 @@ export async function handleAdminProducts(env, user) {
         const src = this.src;
         if (src) openLightbox(src);
       });
+
+      function zoomMainImage() {
+        const img = document.getElementById('focal-image');
+        if (img && img.src) openLightbox(img.src);
+      }
 
       async function editProduct(id) {
         editingId = id;
