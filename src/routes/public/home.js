@@ -13,6 +13,18 @@ export async function handleHome(env, settings) {
     ORDER BY p.sort_order, p.name
   `);
 
+  const allPresentations = await DB.query(`
+    SELECT * FROM product_presentations ORDER BY product_id, sort_order
+  `);
+  const presByProduct = {};
+  for (const pres of allPresentations) {
+    if (!presByProduct[pres.product_id]) presByProduct[pres.product_id] = [];
+    presByProduct[pres.product_id].push(pres);
+  }
+  for (const p of allProducts) {
+    p.presentations = presByProduct[p.id] || [];
+  }
+
   const harinas = allProducts.filter(p => p.type_slug === 'harinas');
   const fideos = allProducts.filter(p => p.type_slug === 'fideos');
 

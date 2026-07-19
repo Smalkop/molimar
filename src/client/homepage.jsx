@@ -78,7 +78,16 @@ function ProductCard({ product, wa }) {
       </div>
       <div className="p-6">
         <h3 className="font-semibold text-gray-900 text-xl mb-2">{product.name}</h3>
-        <p className="text-gray-600 text-sm leading-relaxed mb-5">{product.short_description || ''}</p>
+        <p className="text-gray-600 text-sm leading-relaxed mb-4">{product.short_description || ''}</p>
+        {product.presentations && product.presentations.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {product.presentations.map(p => (
+              <span key={p.id} className="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                {p.weight || p.name}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <a href={`/productos/${product.slug}`} className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">Ver más</a>
           <a href={`https://wa.me/${wa || '595986288006'}?text=${encodeURIComponent('Hola, quiero información sobre ' + product.name)}`} target="_blank" className="text-green-600 hover:text-green-700 transition-colors" aria-label="WhatsApp">
