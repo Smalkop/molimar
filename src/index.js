@@ -15,7 +15,7 @@ import { handleDashboard } from './routes/admin/dashboard.js';
 import { handleAdminProducts, handleAdminProductsApi } from './routes/admin/products.js';
 import { handleAdminUsers, handleAdminUsersApi } from './routes/admin/users.js';
 import { handleAdminSettings, handleAdminSettingsApi } from './routes/admin/settings.js';
-import { handleAdminMessages, handleAdminMessagesApi, handleAdminMessagesRead } from './routes/admin/messages.js';
+import { handleAdminMessages, handleAdminMessagesApi, handleAdminMessagesRead, handleAdminMessagesDelete } from './routes/admin/messages.js';
 import { handleAdminDirectSales, handleAdminDirectSalesApi } from './routes/admin/direct-sales.js';
 
 import { htmlResponse, jsonResponse, redirectResponse, optionsResponse, securityHeaders } from './utils/html.js';
@@ -363,6 +363,11 @@ export default {
     if (pathname.startsWith('/admin/api/mensajes/') && pathname.endsWith('/read') && method === 'POST') {
       const id = pathname.replace('/admin/api/mensajes/', '').replace('/read', '');
       return handleAdminMessagesRead(env, id);
+    }
+
+    if (pathname.startsWith('/admin/api/mensajes/') && pathname.endsWith('/delete') && method === 'POST') {
+      const id = pathname.replace('/admin/api/mensajes/', '').replace('/delete', '');
+      return handleAdminMessagesDelete(env, id);
     }
 
     if (pathname.startsWith('/admin/api/mensajes') && method === 'GET') {
