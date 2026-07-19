@@ -266,8 +266,8 @@ function Homepage() {
               </div>
               <motion.div variants={scaleFade} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.3 }}
                 className="absolute -bottom-6 -left-6 bg-primary-600 text-white p-8 rounded-2xl shadow-xl hidden lg:block">
-                <p className="text-4xl font-bold">+50</p>
-                <p className="text-sm opacity-90">Años de experiencia</p>
+                <p className="text-4xl font-bold">+{s.experience_years || '50'}</p>
+                <p className="text-sm opacity-90">{s.experience_label || 'Años de experiencia'}</p>
               </motion.div>
             </motion.div>
           </div>

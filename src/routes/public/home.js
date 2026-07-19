@@ -34,6 +34,8 @@ export async function handleHome(env, settings) {
     hero_cta_text: settings.hero_cta_text,
     company_description: settings.company_description,
     company_history: settings.company_history,
+    experience_years: settings.experience_years || '50',
+    experience_label: settings.experience_label || 'Años de experiencia',
   };
 
   const extraHead = `

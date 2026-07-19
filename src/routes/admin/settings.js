@@ -88,6 +88,8 @@ export async function handleAdminSettings(env, user) {
               ['hero_title', 'Título del Hero'],
               ['hero_subtitle', 'Subtítulo del Hero'],
               ['hero_cta_text', 'Texto del Botón CTA'],
+              ['experience_years', 'Años de Experiencia (número)'],
+              ['experience_label', 'Etiqueta de Experiencia'],
             ].map(([key, label]) => `
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
