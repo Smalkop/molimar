@@ -414,7 +414,6 @@ export async function handleAdminProductsApi(request, env, id) {
 
       const productData = {
         name: sanitizeString(name),
-        slug: formData.get('slug') || slugify(name),
         product_type_id: parseInt(formData.get('product_type_id')),
         category_id: formData.get('category_id') ? parseInt(formData.get('category_id')) : null,
         short_description: sanitizeString(formData.get('short_description') || ''),
@@ -425,6 +424,17 @@ export async function handleAdminProductsApi(request, env, id) {
         crop_x: parseInt(formData.get('crop_x')) || 50,
         crop_y: parseInt(formData.get('crop_y')) || 50,
       };
+
+      let slug = formData.get('slug') || slugify(name);
+      let uniqueSlug = slug;
+      let counter = 1;
+
+      while (true) {
+        const existing = await DB.get('SELECT id FROM products WHERE slug = ?', [uniqueSlug]);
+        if (!existing) break;
+        uniqueSlug = `${slug}-${counter++}`;
+      }
+      productData.slug = uniqueSlug;
 
       const result = await DB.insert('products', productData);
       const productId = result.meta?.last_row_id || result.id;
@@ -487,7 +497,6 @@ export async function handleAdminProductsApi(request, env, id) {
 
       const productData = {
         name: sanitizeString(name),
-        slug: formData.get('slug') || slugify(name),
         product_type_id: parseInt(formData.get('product_type_id')),
         category_id: formData.get('category_id') ? parseInt(formData.get('category_id')) : null,
         short_description: sanitizeString(formData.get('short_description') || ''),
@@ -498,6 +507,17 @@ export async function handleAdminProductsApi(request, env, id) {
         crop_x: parseInt(formData.get('crop_x')) || 50,
         crop_y: parseInt(formData.get('crop_y')) || 50,
       };
+
+      let slug = formData.get('slug') || slugify(name);
+      let uniqueSlug = slug;
+      let counter = 1;
+
+      while (true) {
+        const existing = await DB.get('SELECT id FROM products WHERE slug = ? AND id != ?', [uniqueSlug, parseInt(id)]);
+        if (!existing) break;
+        uniqueSlug = `${slug}-${counter++}`;
+      }
+      productData.slug = uniqueSlug;
 
       await DB.update('products', productData, 'id', parseInt(id));
 
