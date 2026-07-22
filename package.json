@@ -13,7 +13,10 @@
     "migrate:local": "wrangler d1 execute molipar --local --file=./migrations/001_initial.sql",
     "migrate:003": "wrangler d1 execute molipar --file=./migrations/003_fideos_apetito.sql",
     "migrate:003:local": "wrangler d1 execute molipar --local --file=./migrations/003_fideos_apetito.sql",
-    "seed": "wrangler d1 execute molipar --file=./migrations/002_seed.sql"
+    "migrate:004": "wrangler d1 execute molipar --file=./migrations/004_revoked_tokens.sql",
+    "migrate:004:local": "wrangler d1 execute molipar --local --file=./migrations/004_revoked_tokens.sql",
+    "seed": "wrangler d1 execute molipar --file=./migrations/002_seed.sql",
+    "seed:admin": "node scripts/seed-admin.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.20.0",

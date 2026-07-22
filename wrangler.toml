@@ -15,8 +15,10 @@ binding = "R2"
 bucket_name = "productos-clientes"
 
 # Environment variables
+# JWT_SECRET se carga como Wrangler secret (no commiteado):
+#   npx wrangler secret put JWT_SECRET
 [vars]
 SITE_NAME = "Molipar S.A."
 SITE_URL = "https://molipar.com"
 ADMIN_EMAIL = "admin@molipar.com"
-JWT_SECRET = "c46287f8258964ce4aeaad9f1b84cce547d629a461cd9075a88f2965ef6dc7ed"
+COOKIE_SECURE = "true"
