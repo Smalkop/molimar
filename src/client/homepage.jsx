@@ -1,6 +1,9 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+
+const prefersReducedMotion = typeof window !== 'undefined'
+  && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -41,6 +44,60 @@ const containerVariants = {
 const wipeReveal = {
   hidden: { clipPath: 'inset(0 100% 0 0)' },
   visible: { clipPath: 'inset(0 0% 0 0)', transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1] } },
+};
+
+// --- Hero-specific animation variants ---
+const heroTitleContainer = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: prefersReducedMotion ? 0 : 0.08,
+      delayChildren: prefersReducedMotion ? 0 : 0.15,
+    },
+  },
+};
+
+// Cada palabra del título se revela con un mask wipe de izquierda a derecha
+const heroTitleWord = {
+  hidden: { clipPath: 'inset(0 100% 0 0)', opacity: 0 },
+  visible: {
+    clipPath: 'inset(0 0% 0 0)',
+    opacity: 1,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const heroSubtitle = {
+  hidden: { opacity: 0, y: 24, filter: 'blur(6px)' },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1], delay: prefersReducedMotion ? 0 : 0.5 },
+  },
+};
+
+const heroCtas = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.25, 1, 0.5, 1], delay: prefersReducedMotion ? 0 : 0.75 },
+  },
+};
+
+const scrollIndicator = {
+  hidden: { opacity: 0, y: -8 },
+  visible: {
+    opacity: [0, 1, 1, 0],
+    y: [0, 8, 8, 16],
+    transition: {
+      duration: 2.2,
+      ease: 'easeInOut',
+      repeat: Infinity,
+      delay: prefersReducedMotion ? 0 : 1.4,
+    },
+  },
 };
 
 function SectionWipe({ children, className, animateOnMount = false }) {
@@ -208,6 +265,149 @@ function WheatParticles() {
   );
 }
 
+// --- Hero con parallax, ken-burns y reveal de palabra por palabra ---
+function HeroSection({ settings: s }) {
+  const heroRef = useRef(null);
+
+  // Parallax del fondo y del contenido al hacer scroll sobre el hero.
+  // useScroll con offsethhh mide el progreso del hero dentro del viewport.
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '35%']);
+  const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.18]);
+  const contentY = useTransform(scrollYProgress, [0, 1], ['0%', '40%']);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  // Título corto por palabra para stagger de máscara; respeta espacios múltiples.
+  const titleWords = useMemo(
+    () => (s.hero_title || 'La calidad del trigo, el sabor de siempre').split(/(\s+)/),
+    [s.hero_title],
+  );
+
+  return (
+    <section
+      ref={heroRef}
+      className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900"
+    >
+      {/* Fondo con parallax + ken-burns */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ y: prefersReducedMotion ? 0 : bgY }}
+      >
+        <motion.div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/images/hero-bg.webp')" }}
+          animate={
+            prefersReducedMotion
+              ? {}
+              : { scale: [1, 1.08, 1], transition: { duration: 22, repeat: Infinity, ease: 'linear' } }
+          }
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 via-transparent to-transparent" />
+      </motion.div>
+
+      {/* Contenido */}
+      <motion.div
+        className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 w-full"
+        style={{ y: prefersReducedMotion ? 0 : contentY, opacity: prefersReducedMotion ? 1 : contentOpacity }}
+      >
+        <div className="max-w-3xl">
+          {/* Overline con badge que entra desde la izquierda */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1], delay: prefersReducedMotion ? 0 : 0.05 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full bg-white/10 backdrop-blur-sm border border-white/15"
+          >
+            <span className="w-2 h-2 rounded-full bg-primary-400" />
+            <span className="text-xs font-semibold tracking-wider uppercase text-white/80">
+              {s.company_name || 'Molipar S.A.'}
+            </span>
+          </motion.div>
+
+          {/* Título con reveal palabra por palabra (máscara) */}
+          <motion.h1
+            variants={heroTitleContainer}
+            initial="hidden"
+            animate="visible"
+            className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6"
+            style={{ willChange: 'clip-path' }}
+          >
+            {titleWords.map((w, i) => (
+              <span key={i} style={{ display: 'inline-block', clipPath: 'inherit' }} aria-hidden={w.trim() === '' ? true : undefined}>
+                {w.trim() === '' ? (
+                  w
+                ) : (
+                  <motion.span variants={heroTitleWord} style={{ display: 'inline-block' }}>
+                    {w}
+                  </motion.span>
+                )}
+              </span>
+            ))}
+          </motion.h1>
+
+          {/* Subtítulo con blur reveal */}
+          <motion.p
+            variants={heroSubtitle}
+            initial="hidden"
+            animate="visible"
+            className="text-lg md:text-xl text-gray-300 mb-10 leading-relaxed"
+          >
+            {s.hero_subtitle || 'Producimos harinas y fideos con los más altos estándares de calidad.'}
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div
+            variants={heroCtas}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <motion.a
+              href="/productos"
+              whileHover={prefersReducedMotion ? {} : { scale: 1.04, y: -2 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+              className="inline-flex items-center justify-center px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg shadow-lg shadow-primary-900/30 transition-colors"
+            >
+              {s.hero_cta_text || 'Conocé nuestros productos'}
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </motion.a>
+            <motion.a
+              href="/contacto"
+              whileHover={prefersReducedMotion ? {} : { scale: 1.04, y: -2 }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+              className="inline-flex items-center justify-center px-8 py-4 border-2 border-white/30 hover:border-white/60 text-white font-semibold rounded-lg transition-colors hover:bg-white/10 backdrop-blur-sm"
+            >
+              Contactanos
+            </motion.a>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Indicador de scroll animado */}
+      {!prefersReducedMotion && (
+        <motion.div
+          variants={scrollIndicator}
+          initial="hidden"
+          animate="visible"
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60"
+          aria-hidden="true"
+        >
+          <span className="text-xs uppercase tracking-widest">Scroll</span>
+          <span className="w-px h-10 bg-gradient-to-b from-white/50 to-transparent" />
+        </motion.div>
+      )}
+
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
+    </section>
+  );
+}
+
 function Homepage() {
   const s = window.__SETTINGS__ || {};
   const harinas = window.__HARINAS__ || [];
@@ -217,34 +417,7 @@ function Homepage() {
   return (
     <>
       {/* Hero */}
-      <SectionWipe animateOnMount={true} className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/images/hero-bg.webp')" }} />
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent" />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 w-full">
-          <div className="max-w-3xl">
-            <motion.div variants={fadeUp} initial="hidden" animate="visible">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6">
-                {s.hero_title || 'La calidad del trigo, el sabor de siempre'}
-              </h1>
-            </motion.div>
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.15 }}>
-              <p className="text-lg md:text-xl text-gray-300 mb-10 leading-relaxed">
-                {s.hero_subtitle || 'Producimos harinas y fideos con los más altos estándares de calidad.'}
-              </p>
-            </motion.div>
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.3 }} className="flex flex-col sm:flex-row gap-4">
-              <a href="/productos" className="inline-flex items-center justify-center px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg shadow-lg transition-all">
-                {s.hero_cta_text || 'Conocé nuestros productos'}
-                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-              </a>
-              <a href="/contacto" className="inline-flex items-center justify-center px-8 py-4 border-2 border-white/30 hover:border-white/50 text-white font-semibold rounded-lg transition-all hover:bg-white/10">Contactanos</a>
-            </motion.div>
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
-      </SectionWipe>
+      <HeroSection settings={s} />
 
       {/* Presentation */}
       <SectionWipe animateOnMount={true} className="py-24 bg-white">
