@@ -1,5 +1,9 @@
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
+.dev.vars
 *.log
+.wrangler/
 static/css/output.css

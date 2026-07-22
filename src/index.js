@@ -19,7 +19,7 @@ import { handleAdminMessages, handleAdminMessagesApi, handleAdminMessagesRead, h
 import { handleAdminDirectSales, handleAdminDirectSalesApi } from './routes/admin/direct-sales.js';
 
 import { htmlResponse, jsonResponse, redirectResponse, optionsResponse, securityHeaders } from './utils/html.js';
-import { requireAdmin } from './middleware/auth.js';
+import { requireAdmin, requireAdminRole } from './middleware/auth.js';
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'editor' CHECK(role IN ('admin', 'editor')), active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -41,6 +41,8 @@ CREATE INDEX IF NOT EXISTS idx_settings_key ON site_settings(setting_key);
 CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, subject TEXT, message TEXT NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_messages_read ON contact_messages(is_read);
 CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS revoked_tokens (jti TEXT PRIMARY KEY, token_hash TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires ON revoked_tokens(expires_at);
 `;
 
 const SEED_SQL = `
@@ -180,23 +182,25 @@ async function ensureDatabase(env) {
     }
   }
 
-  // Admin user: always verify on every startup (creates if missing, upgrades hash if old format)
+  // Admin user: NO se crea automáticamente. Usar `npm run seed:admin` con
+  // INITIAL_ADMIN_PASSWORD envuelto como Wrangler secret o variable de entorno
+  // local para/bootstrapping inicial. Cualquier admin por defecto hardcodeado
+  // sería un riesgo de seguridad (P0-2).
   try {
     const existing = await env.DB.prepare('SELECT id, password FROM users WHERE email = ?').bind('admin@molipar.com').first();
-    if (!existing) {
-      const pwdHash = await AUTH.hashPassword('admin123');
-      await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', pwdHash, 'admin').all();
-      try {
-        await env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'false', 'security')").all();
-      } catch {}
-    } else {
+    if (existing) {
+      // Migrar hashes en formato viejo (64 hex sin salt) al formato PBKDF2
+      // solo si el usuario ya existía con un hash deprecado. No reseteamos
+      // el password a admin123.
       const stored = existing.password;
       if (stored && stored.indexOf(':') === -1 && stored.length === 64) {
-        const pwdHash = await AUTH.hashPassword('admin123');
-        await env.DB.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(pwdHash, existing.id).all();
+        // Hash legacy sin salt — forzamos rotación: el usuario debe recrear
+        // su password via reset. Marcamos como inactivo para forzar el flujo.
+        await env.DB.prepare("UPDATE users SET active = 0, updated_at = datetime('now') WHERE id = ?").bind(existing.id).all();
+        console.warn('Admin user con hash deprecado desactivado. Ejecutá `npm run seed:admin` para recrear.');
       }
     }
-  } catch (e) { console.error('Error verifying admin user:', e); }
+  } catch (e) { console.error('Error verificando admin user:', e); }
 
   for (const [key, val] of Object.entries(SETTING_UPDATES)) {
     try {
@@ -223,6 +227,10 @@ async function ensureDatabase(env) {
   try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating sales_regions:', e); }
   try { await env.DB.prepare("ALTER TABLE sales_regions ADD COLUMN updated_at TEXT").all(); } catch {}
 
+  // P0-5: durable token revocation table
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS revoked_tokens (jti TEXT PRIMARY KEY, token_hash TEXT NOT NULL, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating revoked_tokens:', e); }
+  try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires ON revoked_tokens(expires_at)").all(); } catch {}
+
   // Seed sales_regions if empty
   try {
     const count = await env.DB.prepare('SELECT COUNT(*) as c FROM sales_regions').first();
@@ -240,19 +248,27 @@ async function ensureDatabase(env) {
     }
   } catch (e) { console.error('Error seeding sales_regions:', e); }
 
-  // Gallery images for existing harinas (run on every startup, cleanup + reinsert)
+  // P0-6: ELIMINADO el bloque destructivo DELETE + re-INSERT de galerías harina
+  // que corría en cada cold start. Ahora las imágenes de galería se insertan
+  // una sola vez de forma idempotente con INSERT OR IGNORE.
   try {
-    await env.DB.prepare("DELETE FROM product_images WHERE product_id = 1 AND original_path IN ('/images/harina-000-25kg-b.jpg','/images/harina-000-50kg-b.jpg','/images/harina-000-0000-5kg-pack.jpg','/images/harina-000-nutricional.jpg')").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-25kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 25kg', 10)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-50kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 50kg', 11)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-0000-5kg-pack.jpg', 'Harina de Trigo Tipo 000 - Pack 5kg', 12)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-nutricional.jpg', 'Harina de Trigo Tipo 000 - Información Nutricional', 13)").all();
-    await env.DB.prepare("DELETE FROM product_images WHERE product_id = 2 AND original_path IN ('/images/harina-0000-25kg-b.jpg','/images/harina-0000-50kg-b.jpg','/images/harina-0000-5kg-b.jpg','/images/harina-0000-nutricional.jpg')").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-25kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 25kg', 10)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-50kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 50kg', 11)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-5kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 5kg', 12)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13)").all();
-  } catch (e) { console.error('Error updating harina gallery:', e); }
+    const existing = await env.DB.prepare("SELECT COUNT(*) as c FROM product_images WHERE product_id = 1 AND original_path = '/images/harina-000-25kg-b.jpg'").first();
+    if (existing.c === 0) {
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-25kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 25kg', 10)").all();
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-50kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 50kg', 11)").all();
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-0000-5kg-pack.jpg', 'Harina de Trigo Tipo 000 - Pack 5kg', 12)").all();
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-nutricional.jpg', 'Harina de Trigo Tipo 000 - Información Nutricional', 13)").all();
+    }
+  } catch (e) { console.error('Error seeding harina 000 gallery:', e); }
+  try {
+    const existing = await env.DB.prepare("SELECT COUNT(*) as c FROM product_images WHERE product_id = 2 AND original_path = '/images/harina-0000-25kg-b.jpg'").first();
+    if (existing.c === 0) {
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-25kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 25kg', 10)").all();
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-50kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 50kg', 11)").all();
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-5kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 5kg', 12)").all();
+      await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13)").all();
+    }
+  } catch (e) { console.error('Error seeding harina 0000 gallery:', e); }
 
   DB_INITIALIZED = true;
 }
@@ -269,13 +285,31 @@ async function loadSettings(env) {
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const { pathname } = url;
-    const method = request.method;
+    try {
+      return await router(request, env, ctx);
+    } catch (e) {
+      console.error('Unhandled error in fetch:', e);
+      try {
+        return htmlResponse(
+          `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Error 500 - Molipar</title><link rel="stylesheet" href="/css/output.css"></head><body class="min-h-screen flex items-center justify-center bg-gray-50 font-sans"><div class="text-center px-6"><h1 class="text-6xl font-bold text-primary-600 mb-4">500</h1><p class="text-xl text-gray-600 mb-6">Ocurrió un error inesperado. Intentá nuevamente en unos minutos.</p><a href="/" class="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">Volver al inicio</a></div></body></html>`,
+          500,
+          env
+        );
+      } catch {
+        return new Response('Internal Server Error', { status: 500 });
+      }
+    }
+  },
+};
 
-    STORAGE.setR2(env.R2);
-    DB.setEnv(env);
-    await ensureDatabase(env);
+async function router(request, env, ctx) {
+  const url = new URL(request.url);
+  const { pathname } = url;
+  const method = request.method;
+
+  STORAGE.setR2(env.R2);
+  DB.setEnv(env);
+  await ensureDatabase(env);
 
     // Static files from R2
     if (pathname.startsWith('/images/') || pathname.startsWith('/css/') || pathname.startsWith('/js/')) {
@@ -328,7 +362,7 @@ export default {
     // ===== ADMIN ROUTES =====
     if (pathname === '/admin/login' && method === 'GET') return handleLoginPage(env);
     if (pathname === '/admin/api/login' && method === 'POST') return handleLoginApi(request, env);
-    if (pathname === '/admin/logout') return handleLogout(request);
+    if (pathname === '/admin/logout') return handleLogout(request, env);
 
     // Protected admin routes
     const auth = await requireAdmin(request, env);
@@ -351,12 +385,18 @@ export default {
     if (pathname === '/admin/usuarios' && method === 'GET') return handleAdminUsers(env, auth.user);
 
     if (pathname.startsWith('/admin/api/usuarios')) {
+      const denied = requireAdminRole(auth);
+      if (denied) return denied;
       const id = pathname.replace('/admin/api/usuarios', '').replace(/^\//, '') || null;
       return handleAdminUsersApi(request, env, id);
     }
 
     if (pathname === '/admin/configuracion' && method === 'GET') return handleAdminSettings(env, auth.user);
-    if (pathname === '/admin/api/configuracion' && method === 'PUT') return handleAdminSettingsApi(request, env);
+    if (pathname === '/admin/api/configuracion' && method === 'PUT') {
+      const denied = requireAdminRole(auth);
+      if (denied) return denied;
+      return handleAdminSettingsApi(request, env);
+    }
 
     if (pathname === '/admin/mensajes' && method === 'GET') return handleAdminMessages(env, auth.user);
 
@@ -379,6 +419,10 @@ export default {
 
     if (pathname.startsWith('/admin/api/venta-directa')) {
       const id = pathname.replace('/admin/api/venta-directa', '').replace(/^\//, '') || null;
+      if (request.method !== 'GET') {
+        const denied = requireAdminRole(auth);
+        if (denied) return denied;
+      }
       return handleAdminDirectSalesApi(request, env, id);
     }
 
@@ -386,10 +430,12 @@ export default {
     return htmlResponse(`
       <!DOCTYPE html>
       <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>404 - Molipar</title><script src="https://cdn.tailwindcss.com"></script>
+      <title>404 - Molipar</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-      <style>body{font-family:'Inter',sans-serif;}</style></head>
-      <body class="min-h-screen flex items-center justify-center bg-gray-50">
+      <link rel="stylesheet" href="/css/output.css"></head>
+      <body class="min-h-screen flex items-center justify-center bg-gray-50 font-sans">
         <div class="text-center">
           <h1 class="text-8xl font-bold text-primary-600 mb-4">404</h1>
           <p class="text-xl text-gray-600 mb-8">Página no encontrada</p>
@@ -397,8 +443,7 @@ export default {
         </div>
       </body></html>
     `, 404);
-  },
-};
+  }
 
 async function generateSitemap(env, settings) {
   DB.setEnv(env);

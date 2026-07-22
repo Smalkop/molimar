@@ -163,8 +163,9 @@ export async function handleLoginApi(request, env) {
 
   await clearAttempts(ip, data.email);
 
+  const cookieSecure = env.COOKIE_SECURE === 'true' ? '; Secure' : '';
   const headers = new Headers({
-    'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+    'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${cookieSecure}`,
     'Content-Type': 'application/json',
   });
 
@@ -174,15 +175,16 @@ export async function handleLoginApi(request, env) {
   });
 }
 
-export async function handleLogout(request) {
+export async function handleLogout(request, env) {
   const cookie = request.headers.get('Cookie') || '';
   const tokenMatch = cookie.match(/token=([^;]+)/);
   if (tokenMatch) {
-    AUTH.invalidateToken(tokenMatch[1]);
+    await AUTH.invalidateToken(tokenMatch[1], env);
   }
 
+  const cookieSecure = (env?.COOKIE_SECURE === 'true') ? '; Secure' : '';
   const headers = new Headers({
-    'Set-Cookie': 'token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict',
+    'Set-Cookie': `token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict${cookieSecure}`,
     'Location': '/admin/login',
   });
 

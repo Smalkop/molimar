@@ -59,11 +59,13 @@ const AUTH = {
   async generateToken(user) {
     const header = { alg: 'HS256', typ: 'JWT' };
     const now = Math.floor(Date.now() / 1000);
+    const jti = crypto.randomUUID();
     const payload = {
       sub: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      jti,
       iat: now,
       exp: now + 86400,
     };
@@ -90,7 +92,7 @@ const AUTH = {
 
   async verifyToken(token) {
     try {
-      if (AUTH.isTokenInvalidated(token)) return null;
+      if (await AUTH.isTokenInvalidated(token)) return null;
 
       const parts = token.split('.');
       if (parts.length !== 3) return null;
@@ -133,14 +135,62 @@ const AUTH = {
     return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
   },
 
-  invalidatedTokens: new Set(),
-
-  isTokenInvalidated(token) {
-    return AUTH.invalidatedTokens.has(token);
+  async isTokenInvalidated(token) {
+    const jti = AUTH._extractJti(token);
+    if (!jti) return false;
+    try {
+      const row = await AUTH.env.DB.prepare('SELECT jti FROM revoked_tokens WHERE jti = ?').bind(jti).first();
+      return !!row;
+    } catch {
+      return false;
+    }
   },
 
-  invalidateToken(token) {
-    AUTH.invalidatedTokens.add(token);
+  async invalidateToken(token, env) {
+    if (env) AUTH.setEnv(env);
+    const jti = AUTH._extractJti(token);
+    if (!jti) return;
+    try {
+      const payload = AUTH._decodePayload(token);
+      const expiresAt = payload?.exp
+        ? new Date(payload.exp * 1000).toISOString().replace('T', ' ').replace(/\.\d+Z$/, 'Z')
+        : new Date(Date.now() + 86400 * 1000).toISOString().replace('T', ' ').replace(/\.\d+Z$/, 'Z');
+      await AUTH.env.DB.prepare(
+        'INSERT OR IGNORE INTO revoked_tokens (jti, token_hash, expires_at) VALUES (?, ?, ?)'
+      ).bind(jti, token, expiresAt).run();
+      await AUTH._cleanupExpired();
+    } catch (e) {
+      console.error('Error invalidating token:', e);
+    }
+  },
+
+  async _cleanupExpired() {
+    try {
+      await AUTH.env.DB.prepare(
+        "DELETE FROM revoked_tokens WHERE expires_at < datetime('now')"
+      ).run();
+    } catch {}
+  },
+
+  _extractJti(token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1]));
+      return payload?.jti || null;
+    } catch {
+      return null;
+    }
+  },
+
+  _decodePayload(token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      return JSON.parse(atob(parts[1]));
+    } catch {
+      return null;
+    }
   },
 
   setEnv(env) {
