@@ -1,6 +1,7 @@
 import { htmlResponse, jsonResponse, sanitizeString, imgUrl } from '../../utils/html.js';
 import STORAGE from '../../services/storage.js';
 import IMAGE from '../../services/image.js';
+import DB from '../../services/database.js';
 
 // ===== Página /admin/galeria =====
 export async function handleAdminGallery(env, user) {
@@ -57,17 +58,22 @@ export async function handleAdminGallery(env, user) {
             <div class="aspect-square overflow-hidden cursor-pointer" onclick="openLightbox('/media/' + encodeURIComponent('\${img.key}'))">
               <img src="/media/\${encodeURIComponent(img.key)}" alt="" loading="lazy" class="w-full h-full object-cover transition-transform group-hover:scale-105">
             </div>
+            \${
+              img.in_use
+                ? '<div class="absolute top-2 left-2 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full shadow">En uso</div>'
+                : ''
+            }
             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
               <button onclick="copyKey('\${img.key}')" title="Copiar URL" class="w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
               </button>
-              <button onclick="deleteImage('\${img.key}')" title="Eliminar" class="w-8 h-8 bg-black/50 hover:bg-red-600 rounded-full flex items-center justify-center">
+              <button onclick="deleteImage('\${img.key}', \${img.in_use})" title="Eliminar" class="w-8 h-8 bg-black/50 hover:bg-red-600 rounded-full flex items-center justify-center">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             </div>
             <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <p class="text-white text-xs font-mono truncate">\${img.key}</p>
-              <p class="text-white/60 text-xs">\${formatSize(img.size)}</p>
+              <p class="text-white/60 text-xs">\${formatSize(img.size)}\${img.in_use ? ' • ' + img.used_by.length + ' producto(s)' : ''}</p>
             </div>
           </div>
         \`).join('');
@@ -106,8 +112,12 @@ export async function handleAdminGallery(env, user) {
         } catch {}
       }
 
-      async function deleteImage(key) {
-        if (!confirm('¿Eliminar esta imagen de la galería? Si está siendo usada por un producto, dejará de verse.')) return;
+      async function deleteImage(key, inUse) {
+        const img = allImages.find(i => i.key === key);
+        if (inUse && img && img.used_by && img.used_by.length > 0) {
+          const names = img.used_by.map(p => p.name).join(', ');
+          if (!confirm('Esta imagen se usa en: ' + names + '.\\n\\nSi la eliminás dejará de verse en esos productos. ¿Eliminar de todas formas?')) return;
+        } else if (!confirm('¿Eliminar esta imagen de la galería?')) return;
         try {
           const res = await fetch('/admin/api/galeria?key=' + encodeURIComponent(key), { method: 'DELETE' });
           if (res.status === 401) { window.location.href = '/admin/login'; return; }
@@ -165,8 +175,6 @@ export async function handleAdminGalleryApi(request, env, id) {
 
   if (request.method === 'GET') {
     try {
-      // Listamos todo bajo el prefijo 'gallery/' (nuestra galería suelta).
-      // Si en el futuro se quieren ver también molipa/, podemos añadir un query `?all=1`.
       const all = request.url.includes('?all=1');
       let items = [];
       if (all) {
@@ -174,7 +182,24 @@ export async function handleAdminGalleryApi(request, env, id) {
       } else {
         items = await STORAGE.list({ prefix: 'gallery/' });
       }
-      // Filtrar solo imágenes
+
+      // Consultar qué imágenes de galería están siendo usadas por productos
+      DB.setEnv(env);
+      const usedRows = await DB.query(`
+        SELECT DISTINCT pi.original_path, p.id as product_id, p.name as product_name
+        FROM product_images pi
+        JOIN products p ON pi.product_id = p.id
+        WHERE pi.original_path LIKE 'gallery/%'
+           OR pi.medium_path LIKE 'gallery/%'
+           OR pi.thumbnail_path LIKE 'gallery/%'
+      `);
+      const usedMap = new Map();
+      for (const row of usedRows) {
+        const key = row.original_path;
+        if (!usedMap.has(key)) usedMap.set(key, []);
+        usedMap.get(key).push({ id: row.product_id, name: row.product_name });
+      }
+
       const images = items
         .filter(it => IMAGE.isImageContentType(it.contentType) || /\.(jpe?g|png|webp|avif|gif)$/i.test(it.key))
         .filter(it => !it.key.startsWith('static/'))
@@ -183,6 +208,8 @@ export async function handleAdminGalleryApi(request, env, id) {
           size: it.size,
           uploaded: it.uploaded,
           contentType: it.contentType,
+          in_use: usedMap.has(it.key),
+          used_by: usedMap.get(it.key) || [],
         }))
         .sort((a, b) => (b.uploaded || '').localeCompare(a.uploaded || ''));
       return jsonResponse({ images });
@@ -306,6 +333,7 @@ export function galleryPickerHTML() {
               <div class="aspect-square rounded-lg overflow-hidden border-2 transition-all \${checked ? 'border-primary-600 ring-2 ring-primary-200' : 'border-transparent hover:border-primary-300'}">
                 <img src="/media/\${encodeURIComponent(img.key)}" alt="" loading="lazy" class="w-full h-full object-cover">
               </div>
+              \${img.in_use ? '<div class="absolute bottom-1 left-1 bg-amber-400 text-amber-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">En uso</div>' : ''}
               <div class="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center transition-all \${checked ? 'bg-primary-600 text-white' : 'bg-black/40 text-transparent group-hover:text-white/80'}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
               </div>
