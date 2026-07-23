@@ -92,6 +92,31 @@ const IMAGE = {
       await STORAGE.deleteMultiple(paths);
     }
   },
+
+  // Subida simple a la galería suelta (sin producto asociado).
+  // Devuelve el key R2 completo, que se sirve vía /media/<key>.
+  async processGallery(file) {
+    if (!IMAGE.ALLOWED_TYPES.includes(file.type)) {
+      throw new Error(`Tipo de imagen no soportado: ${file.type}`);
+    }
+    if (file.size > IMAGE.MAX_SIZE) {
+      throw new Error('La imagen excede el tamaño máximo de 10MB');
+    }
+    const buffer = await file.arrayBuffer();
+    if (!validateMagicBytes(buffer, file.type)) {
+      throw new Error('El archivo no parece ser una imagen válida');
+    }
+    const uuid = crypto.randomUUID();
+    const ext = IMAGE.getExtension(file.type);
+    const key = `gallery/${uuid}${ext}`;
+    await STORAGE.upload(key, buffer, file.type);
+    return key;
+  },
+
+  // Indica si un objeto R2 listado es una imagen (por contentType).
+  isImageContentType(ct) {
+    return IMAGE.ALLOWED_TYPES.includes(ct);
+  },
 };
 
 export default IMAGE;

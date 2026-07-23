@@ -17,6 +17,7 @@ import { handleAdminUsers, handleAdminUsersApi } from './routes/admin/users.js';
 import { handleAdminSettings, handleAdminSettingsApi } from './routes/admin/settings.js';
 import { handleAdminMessages, handleAdminMessagesApi, handleAdminMessagesRead, handleAdminMessagesDelete } from './routes/admin/messages.js';
 import { handleAdminDirectSales, handleAdminDirectSalesApi } from './routes/admin/direct-sales.js';
+import { handleAdminGallery, handleAdminGalleryApi } from './routes/admin/gallery.js';
 
 import { htmlResponse, jsonResponse, redirectResponse, optionsResponse, securityHeaders } from './utils/html.js';
 import { requireAdmin } from './middleware/auth.js';
@@ -380,6 +381,11 @@ export default {
     if (pathname.startsWith('/admin/api/venta-directa')) {
       const id = pathname.replace('/admin/api/venta-directa', '').replace(/^\//, '') || null;
       return handleAdminDirectSalesApi(request, env, id);
+    }
+
+    if (pathname === '/admin/galeria' && method === 'GET') return handleAdminGallery(env, auth.user);
+    if (pathname.startsWith('/admin/api/galeria')) {
+      return handleAdminGalleryApi(request, env);
     }
 
     // ===== 404 =====
