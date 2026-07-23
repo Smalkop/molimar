@@ -1,6 +1,7 @@
 import { htmlResponse, jsonResponse, slugify, sanitizeString, escapeHtml, imgUrl } from '../../utils/html.js';
 import DB from '../../services/database.js';
 import IMAGE from '../../services/image.js';
+import { galleryPickerHTML } from './gallery.js';
 
 export async function handleAdminProducts(env, user) {
   DB.setEnv(env);
@@ -139,7 +140,14 @@ export async function handleAdminProducts(env, user) {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Imagen Principal</label>
-              <input type="file" id="product-main-image" name="main_image" accept="image/*" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+              <div class="flex flex-wrap items-center gap-2 mb-2">
+                <input type="file" id="product-main-image" name="main_image" accept="image/*" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                <button type="button" onclick="openGalleryPicker('main')" class="text-sm px-3 py-2 border border-primary-200 text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  De la Galería
+                </button>
+              </div>
+              <input type="hidden" id="main-image-gallery" name="main_image_gallery" value="">
               <div id="main-image-preview" class="mt-2 hidden">
                 <div class="relative inline-block cursor-crosshair group" id="focal-container">
                   <img src="" alt="Preview" id="focal-image" class="h-48 rounded-lg shadow-sm" style="object-fit: cover;">
@@ -169,8 +177,16 @@ export async function handleAdminProducts(env, user) {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Galería de Imágenes</label>
-              <input type="file" id="product-gallery" name="gallery" accept="image/*" multiple class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+              <div class="flex flex-wrap items-center gap-2 mb-2">
+                <input type="file" id="product-gallery" name="gallery" accept="image/*" multiple class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                <button type="button" onclick="openGalleryPicker('gallery')" class="text-sm px-3 py-2 border border-primary-200 text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  De la Galería
+                </button>
+              </div>
+              <input type="hidden" id="gallery-selected-input" name="gallery_selected" value="">
               <div id="gallery-preview" class="mt-2 grid grid-cols-4 gap-2"></div>
+              <p class="mt-1 text-xs text-gray-400">Las imágenes elegidas de la galería se suman a las que subas desde tu equipo.</p>
             </div>
             <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
               <button type="button" onclick="closeModal()" class="px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
@@ -181,11 +197,17 @@ export async function handleAdminProducts(env, user) {
       </div>
     </div>
 
+    ${galleryPickerHTML()}
+
     <script>
       let editingId = null;
+      let selectedGalleryKeys = [];
 
       function openModal() {
         editingId = null;
+        selectedGalleryKeys = [];
+        document.getElementById('gallery-selected-input').value = '';
+        document.getElementById('main-image-gallery').value = '';
         document.getElementById('product-form').reset();
         document.getElementById('modal-title').textContent = 'Nuevo Producto';
         document.getElementById('main-image-preview').classList.add('hidden');
@@ -282,6 +304,9 @@ export async function handleAdminProducts(env, user) {
 
       async function editProduct(id) {
         editingId = id;
+        pendingGalleryKeys = [];
+        document.getElementById('gallery-selected-input').value = '';
+        document.getElementById('main-image-gallery').value = '';
         try {
           const res = await fetch('/admin/api/productos/' + id);
           if (res.status === 401) { window.location.href = '/admin/login'; return; }
@@ -387,6 +412,54 @@ export async function handleAdminProducts(env, user) {
           alert('Error de conexión');
         }
       }
+
+      // === Callbacks del gallery picker ===
+      function setMainImageFromGallery(key) {
+        // Marca el key seleccionado y muestra preview. El handler del servidor
+        // si viene main_image_gallery lo usa como main_image directly (paths.medium = key).
+        document.getElementById('main-image-gallery').value = key;
+        // Limpiar el input file para evitar conflicto
+        document.getElementById('product-main-image').value = '';
+        const prev = document.getElementById('main-image-preview');
+        prev.classList.remove('hidden');
+        const img = document.getElementById('focal-image');
+        img.src = '/media/' + encodeURIComponent(key);
+        img.onload = function() {
+          resetFocal();
+          document.getElementById('focal-marker').classList.remove('hidden');
+        };
+      }
+
+      let pendingGalleryKeys = [];
+      function appendGalleryFromPicker(keys) {
+        for (const k of keys) {
+          if (!pendingGalleryKeys.includes(k)) pendingGalleryKeys.push(k);
+        }
+        renderPendingGallery();
+        // Sincronizar hidden input
+        document.getElementById('gallery-selected-input').value = pendingGalleryKeys.join(',');
+      }
+
+      function renderPendingGallery() {
+        const preview = document.getElementById('gallery-preview');
+        if (pendingGalleryKeys.length === 0) {
+          preview.innerHTML = '';
+          return;
+        }
+        preview.innerHTML = pendingGalleryKeys.map((k, i) => \`
+          <div class="relative group">
+            <img src="/media/\${encodeURIComponent(k)}" alt="" class="w-full h-20 object-cover rounded-lg border border-gray-200">
+            <button type="button" onclick="removePendingGallery(\${i})" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full text-xs flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+            <span class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-1 py-0.5 truncate rounded-b-lg">Galería</span>
+          </div>
+        \`).join('');
+      }
+
+      function removePendingGallery(i) {
+        pendingGalleryKeys.splice(i, 1);
+        document.getElementById('gallery-selected-input').value = pendingGalleryKeys.join(',');
+        renderPendingGallery();
+      }
     </script>
   `, user);
 
@@ -454,7 +527,10 @@ export async function handleAdminProductsApi(request, env, id) {
         }
       }
 
+      // === Imagen principal ===
+      // Prioridad: archivo subido > imagen elegida de la galería.
       const mainImage = formData.get('main_image');
+      const mainGalleryKey = formData.get('main_image_gallery');
       if (mainImage && mainImage.size > 0) {
         const paths = await IMAGE.process(mainImage, productId);
         await DB.update('products', { main_image: paths.medium }, 'id', productId);
@@ -466,19 +542,46 @@ export async function handleAdminProductsApi(request, env, id) {
           original_path: paths.original,
           sort_order: 0,
         });
+      } else if (mainGalleryKey && typeof mainGalleryKey === 'string' && mainGalleryKey.length > 0) {
+        await DB.update('products', { main_image: mainGalleryKey }, 'id', productId);
+        await DB.insert('product_images', {
+          product_id: productId,
+          image_type: 'main',
+          thumbnail_path: mainGalleryKey,
+          medium_path: mainGalleryKey,
+          original_path: mainGalleryKey,
+          sort_order: 0,
+        });
       }
 
+      // === Galería del producto ===
+      // Combination: archivos subidos (procesados) + keys seleccionadas de la galería.
+      let gallerySort = 1;
       const galleryFiles = formData.getAll('gallery');
-      for (let i = 0; i < galleryFiles.length; i++) {
-        if (galleryFiles[i].size > 0) {
-          const paths = await IMAGE.process(galleryFiles[i], productId);
+      for (const f of galleryFiles) {
+        if (f.size > 0) {
+          const paths = await IMAGE.process(f, productId);
           await DB.insert('product_images', {
             product_id: productId,
             image_type: 'gallery',
             thumbnail_path: paths.thumbnail,
             medium_path: paths.medium,
             original_path: paths.original,
-            sort_order: i + 1,
+            sort_order: gallerySort++,
+          });
+        }
+      }
+      const gallerySelectedRaw = formData.get('gallery_selected');
+      if (gallerySelectedRaw && typeof gallerySelectedRaw === 'string') {
+        const keys = gallerySelectedRaw.split(',').map(s => s.trim()).filter(Boolean);
+        for (const k of keys) {
+          await DB.insert('product_images', {
+            product_id: productId,
+            image_type: 'gallery',
+            thumbnail_path: k,
+            medium_path: k,
+            original_path: k,
+            sort_order: gallerySort++,
           });
         }
       }
@@ -537,11 +640,22 @@ export async function handleAdminProductsApi(request, env, id) {
         }
       }
 
+      // === Imagen principal (PUT) ===
+      // Prioridad: archivo subido > imagen de galería seleccionada.
       const mainImage = formData.get('main_image');
+      const mainGalleryKey = formData.get('main_image_gallery');
       if (mainImage && mainImage.size > 0) {
         const paths = await IMAGE.process(mainImage, parseInt(id));
         await DB.update('products', { main_image: paths.medium }, 'id', parseInt(id));
-        await DB.delete('product_images', 'product_id', parseInt(id));
+        // Remover la imagen principal anterior sin tocar la galería
+        const prevMain = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'main']);
+        if (prevMain.length > 0) {
+          // Solo borrar de R2 las generadas vía IMAGE.process (que arrancan con molipa/).
+          // Las elegidas de galería (gallery/) no se borran de R2 al seguir usándose ahí.
+          const toDelete = prevMain.filter(i => (i.original_path || '').startsWith('molipa/'));
+          if (toDelete.length > 0) await IMAGE.delete(toDelete);
+          for (const i of prevMain) await DB.delete('product_images', 'id', i.id);
+        }
         await DB.insert('product_images', {
           product_id: parseInt(id),
           image_type: 'main',
@@ -550,28 +664,68 @@ export async function handleAdminProductsApi(request, env, id) {
           original_path: paths.original,
           sort_order: 0,
         });
+      } else if (mainGalleryKey && typeof mainGalleryKey === 'string' && mainGalleryKey.length > 0) {
+        await DB.update('products', { main_image: mainGalleryKey }, 'id', parseInt(id));
+        const prevMain = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'main']);
+        for (const i of prevMain) await DB.delete('product_images', 'id', i.id);
+        await DB.insert('product_images', {
+          product_id: parseInt(id),
+          image_type: 'main',
+          thumbnail_path: mainGalleryKey,
+          medium_path: mainGalleryKey,
+          original_path: mainGalleryKey,
+          sort_order: 0,
+        });
       }
 
+      // === Galería del producto (PUT) ===
+      // Solo se reemplaza la galería si el usuario subió archivos nuevos O eligió
+      // imágenes de la galería. Si no, se conserva la existente (evita borrar al
+      // editar otros campos del producto).
       const galleryFiles = formData.getAll('gallery');
-      if (galleryFiles.length > 0 && galleryFiles[0].size > 0) {
-        const existingImages = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'gallery']);
+      const gallerySelectedRaw = formData.get('gallery_selected');
+      const gallerySelectedKeys = (gallerySelectedRaw && typeof gallerySelectedRaw === 'string'
+        ? gallerySelectedRaw.split(',').map(s => s.trim()).filter(Boolean)
+        : []);
+
+      const hasNewFiles = galleryFiles.length > 0 && galleryFiles[0].size > 0;
+      const hasGallerySelection = gallerySelectedKeys.length > 0;
+
+      if (hasNewFiles || hasGallerySelection) {
+        const existingImages = await DB.query(
+          'SELECT * FROM product_images WHERE product_id = ? AND image_type = ?',
+          [parseInt(id), 'gallery'],
+        );
         if (existingImages.length > 0) {
-          await IMAGE.delete(existingImages);
+          // Solo borrar de R2 las que fueron procesadas (molipa/). Las elegidas
+          // de la galería (gallery/) siguen siendo reutilizables.
+          const toDelete = existingImages.filter(i => (i.original_path || '').startsWith('molipa/'));
+          if (toDelete.length > 0) await IMAGE.delete(toDelete);
           await DB.delete('product_images', 'product_id', parseInt(id));
         }
-
-        for (let i = 0; i < galleryFiles.length; i++) {
-          if (galleryFiles[i].size > 0) {
-            const paths = await IMAGE.process(galleryFiles[i], parseInt(id));
+        let gallerySort = 1;
+        for (const f of galleryFiles) {
+          if (f.size > 0) {
+            const paths = await IMAGE.process(f, parseInt(id));
             await DB.insert('product_images', {
               product_id: parseInt(id),
               image_type: 'gallery',
               thumbnail_path: paths.thumbnail,
               medium_path: paths.medium,
               original_path: paths.original,
-              sort_order: i + 1,
+              sort_order: gallerySort++,
             });
           }
+        }
+        for (const k of gallerySelectedKeys) {
+          await DB.insert('product_images', {
+            product_id: parseInt(id),
+            image_type: 'gallery',
+            thumbnail_path: k,
+            medium_path: k,
+            original_path: k,
+            sort_order: gallerySort++,
+          });
         }
       }
 
@@ -634,6 +788,10 @@ async function adminLayoutWithContent(content, user) {
         <a href="/admin/productos" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-primary-700 bg-primary-50 border-r-2 border-primary-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
           <span>Productos</span>
+        </a>
+        <a href="/admin/galeria" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Galería</span>
         </a>
         <a href="/admin/venta-directa" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>

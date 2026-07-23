@@ -22,6 +22,28 @@ const STORAGE = {
     return true;
   },
 
+  // Lista objetos de R2. Opcionalmente con un prefijo.
+  // R2.list devuelve como máximo 1000 objetos por llamada; paginamos con cursor.
+  async list({ prefix, limit = 1000 } = {}) {
+    const env = STORAGE.getEnv();
+    const items = [];
+    let cursor;
+    do {
+      const page = await env.R2.list({ cursor, prefix, limit: 1000 });
+      for (const obj of page.objects) {
+        items.push({
+          key: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded?.toISOString?.() || obj.uploaded,
+          contentType: obj.httpMetadata?.contentType || 'application/octet-stream',
+        });
+      }
+      cursor = page.truncated ? page.cursor : null;
+      if (items.length >= limit) break;
+    } while (cursor);
+    return items;
+  },
+
   async getPublicUrl(key) {
     const env = STORAGE.getEnv();
     const object = await env.R2.get(key);
