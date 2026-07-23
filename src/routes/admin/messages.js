@@ -78,7 +78,7 @@ export async function handleAdminMessages(env, user) {
             <div><p class="text-gray-500 text-xs">Email</p><p class="font-medium text-gray-900">\${m.email}</p></div>
             \${m.phone ? '<div><p class="text-gray-500 text-xs">Teléfono</p><p class="font-medium text-gray-900">' + m.phone + '</p></div>' : ''}
             \${m.subject ? '<div><p class="text-gray-500 text-xs">Asunto</p><p class="font-medium text-gray-900">' + m.subject + '</p></div>' : ''}
-            <div><p class="text-gray-500 text-xs">Fecha</p><p class="font-medium text-gray-900">' + new Date(m.created_at).toLocaleString('es-AR') + '</p></div>
+            <div><p class="text-gray-500 text-xs">Fecha</p><p class="font-medium text-gray-900">\${new Date(m.created_at).toLocaleString('es-AR')}</p></div>
           </div>
           <div><p class="text-gray-500 text-xs mb-2">Mensaje</p><p class="text-gray-900 leading-relaxed">\${m.message}</p></div>
         \`;
