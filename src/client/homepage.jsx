@@ -129,6 +129,7 @@ function ProductCard({ product, wa }) {
           src={product.main_image?.startsWith('http') || product.main_image?.startsWith('/') ? product.main_image : '/media/' + (product.main_image || '')}
           alt={product.name}
           className="w-full h-full object-cover"
+          style={{ objectPosition: 'center' }}
           loading="lazy"
         />
         <span className="absolute top-3 left-3 px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">{product.type_name}</span>
@@ -137,12 +138,41 @@ function ProductCard({ product, wa }) {
         <h3 className="font-semibold text-gray-900 text-xl mb-2">{product.name}</h3>
         <p className="text-gray-600 text-sm leading-relaxed mb-4">{product.short_description || ''}</p>
         {product.presentations && product.presentations.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {product.presentations.map(p => (
-              <span key={p.id} className="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                {p.weight || p.name}
-              </span>
-            ))}
+          <div className="mb-4 space-y-2">
+            {(() => {
+              const packages = product.presentations.filter(p => {
+                const w = parseFloat(p.weight);
+                return isNaN(w) || w < 10;
+              });
+              const bulk = product.presentations.filter(p => {
+                const w = parseFloat(p.weight);
+                return !isNaN(w) && w >= 10;
+              });
+              return (
+                <>
+                  {packages.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {packages.map(p => (
+                        <span key={p.id} className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                          {p.weight || p.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {bulk.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {bulk.map(p => (
+                        <span key={p.id} className="inline-flex items-center px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                          {p.weight || p.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
         <div className="flex items-center justify-between">
@@ -435,7 +465,7 @@ function Homepage() {
             </motion.div>
             <motion.div variants={fadeRight} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="relative">
               <div className="aspect-w-1 aspect-h-1 rounded-2xl overflow-hidden shadow-2xl">
-                <img src="/images/about-preview.webp" alt="Molipar S.A." className="w-full h-full object-cover" loading="lazy" />
+                <img src="/images/about-preview.webp" alt="Molipar S.A." className="w-full h-full object-cover" style={{ objectPosition: 'center' }} loading="lazy" />
               </div>
               <motion.div variants={scaleFade} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.3 }}
                 className="absolute -bottom-6 -left-6 bg-primary-600 text-white p-8 rounded-2xl shadow-xl hidden lg:block">

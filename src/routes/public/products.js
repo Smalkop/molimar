@@ -2,6 +2,13 @@ import { Layout } from '../../components/Layout.js';
 import { htmlResponse, escapeHtml, imgUrl, normalizeWhatsApp } from '../../utils/html.js';
 import DB from '../../services/database.js';
 
+function classifyWeight(weight) {
+  if (!weight) return 'package';
+  const num = parseFloat(weight);
+  if (isNaN(num)) return 'package';
+  return num < 10 ? 'package' : 'bulk';
+}
+
 export async function handleProducts(env, settings) {
   DB.setEnv(env);
 
@@ -194,7 +201,7 @@ export async function handleProductDetail(env, settings, slug) {
                 ${images.filter(i => i.image_type === 'gallery').map(img => `
                   <div class="aspect-w-4 aspect-h-3 rounded-xl overflow-hidden cursor-pointer card-hover">
                     <img src="${imgUrl(img.medium_path || img.original_path)}" alt="${img.alt_text || product.name}"
-                         class="w-full h-full object-cover" loading="lazy" data-lightbox="${imgUrl(img.original_path || img.medium_path)}">
+                         class="w-full h-full object-cover" style="object-position: center" loading="lazy" data-lightbox="${imgUrl(img.original_path || img.medium_path)}">
                   </div>
                 `).join('')}
               </div>
@@ -202,21 +209,41 @@ export async function handleProductDetail(env, settings, slug) {
           </div>
 
           <div class="animate-fade-right">
-            ${presentations.length > 0 ? `
+            ${presentations.length > 0 ? (() => {
+              const packages = presentations.filter(p => classifyWeight(p.weight) === 'package');
+              const bulk = presentations.filter(p => classifyWeight(p.weight) === 'bulk');
+              return `
             <div class="bg-gray-50 rounded-2xl p-8 mb-8">
               <h3 class="text-xl font-bold text-gray-900 mb-6">Presentaciones</h3>
-              <div class="space-y-4">
-                ${presentations.map(p => `
-                  <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                    <div>
-                      <p class="font-medium text-gray-900">${p.name}</p>
-                      ${p.weight ? `<p class="text-sm text-gray-500">${p.weight}</p>` : ''}
+              ${packages.length > 0 ? `
+              <div class="mb-6">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Paquetes</p>
+                <div class="grid grid-cols-2 gap-3">
+                  ${packages.map(p => `
+                    <div class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm text-center">
+                      <svg class="w-8 h-8 text-primary-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                      <p class="font-medium text-gray-900 text-sm">${p.name}</p>
+                      ${p.weight ? `<p class="text-xs text-gray-500">${p.weight}</p>` : ''}
+                      ${p.price ? `<p class="text-sm font-bold text-primary-600 mt-1">$${p.price.toFixed(2)}</p>` : ''}
                     </div>
-                    ${p.price ? `<p class="text-lg font-bold text-primary-600">$${p.price.toFixed(2)}</p>` : ''}
-                  </div>
-                `).join('')}
-              </div>
-            </div>` : ''}
+                  `).join('')}
+                </div>
+              </div>` : ''}
+              ${bulk.length > 0 ? `
+              <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Fardos / Bolsas</p>
+                <div class="grid grid-cols-2 gap-3">
+                  ${bulk.map(p => `
+                    <div class="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm text-center">
+                      <svg class="w-8 h-8 text-amber-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                      <p class="font-medium text-gray-900 text-sm">${p.name}</p>
+                      ${p.weight ? `<p class="text-xs text-gray-500">${p.weight}</p>` : ''}
+                      ${p.price ? `<p class="text-sm font-bold text-primary-600 mt-1">$${p.price.toFixed(2)}</p>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>` : ''}
+            </div>`})() : ''}
 
             ${product.nutritional_info ? `
             <div class="bg-gray-50 rounded-2xl p-8">
