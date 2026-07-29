@@ -5,11 +5,19 @@ import { galleryPickerHTML } from './gallery.js';
 
 export async function handleAdminProducts(env, user) {
   DB.setEnv(env);
-  const products = await DB.query(`
+  const harinas = await DB.query(`
     SELECT p.*, pt.name as type_name
     FROM products p
     JOIN product_types pt ON p.product_type_id = pt.id
-    ORDER BY p.updated_at DESC
+    WHERE p.product_type_id = 1
+    ORDER BY p.sort_order, p.name
+  `);
+  const fideos = await DB.query(`
+    SELECT p.*, pt.name as type_name
+    FROM products p
+    JOIN product_types pt ON p.product_type_id = pt.id
+    WHERE p.product_type_id = 2
+    ORDER BY p.sort_order, p.name
   `);
   const types = await DB.query('SELECT * FROM product_types ORDER BY sort_order');
   const categories = await DB.query('SELECT * FROM categories ORDER BY product_type_id, sort_order');
@@ -19,59 +27,15 @@ export async function handleAdminProducts(env, user) {
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Productos</h1>
-          <p class="text-gray-500 text-sm mt-1">${products.length} producto(s) registrados</p>
+          <p class="text-gray-500 text-sm mt-1">${harinas.length} harina(s) · ${fideos.length} fideo(s)</p>
         </div>
         <button onclick="openModal()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-all">
           + Nuevo Producto
         </button>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50 text-left">
-              <tr>
-                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Orden</th>
-                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              ${products.map(p => `
-                <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4">
-                    <div class="flex items-center space-x-3">
-                      ${p.main_image ? `<img src="${imgUrl(p.main_image)}" alt="" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>`}
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">${escapeHtml(p.name)}</p>
-                        <p class="text-xs text-gray-500">${p.slug}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-600">${p.type_name}</td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-1 text-xs font-medium rounded-full ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${p.status === 'active' ? 'Activo' : 'Inactivo'}</span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-500">${p.sort_order}</td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center space-x-2">
-                      <button onclick="editProduct(${p.id})" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all" title="Editar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                      </button>
-                      <button onclick="deleteProduct(${p.id}, '${escapeHtml(p.name)}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-              ${products.length === 0 ? '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 text-sm">No hay productos. Creá el primero.</td></tr>' : ''}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      ${renderProductTable('Harinas', 'harinas', harinas)}
+      ${renderProductTable('Fideos', 'fideos', fideos)}
     </div>
 
     <!-- Modal Producto -->
@@ -202,6 +166,9 @@ export async function handleAdminProducts(env, user) {
     <script>
       let editingId = null;
       let selectedGalleryKeys = [];
+
+      setupDragDrop('harinas');
+      setupDragDrop('fideos');
 
       function openModal() {
         editingId = null;
@@ -460,6 +427,76 @@ export async function handleAdminProducts(env, user) {
         document.getElementById('gallery-selected-input').value = pendingGalleryKeys.join(',');
         renderPendingGallery();
       }
+
+      // === Drag & drop reordering ===
+      function setupDragDrop(typeId) {
+        const tbody = document.getElementById(typeId + '-tbody');
+        if (!tbody) return;
+        let draggedRow = null;
+
+        tbody.addEventListener('dragstart', function(e) {
+          const row = e.target.closest('tr');
+          if (!row) return;
+          draggedRow = row;
+          row.classList.add('opacity-40');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', row.dataset.id);
+        });
+
+        tbody.addEventListener('dragend', function(e) {
+          const row = e.target.closest('tr') || draggedRow;
+          if (row) row.classList.remove('opacity-40');
+          tbody.querySelectorAll('.drop-target').forEach(function(el) {
+            el.classList.remove('drop-target', 'border-t-2', 'border-primary-500');
+          });
+          draggedRow = null;
+        });
+
+        tbody.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          const target = e.target.closest('tr');
+          if (!target || target === draggedRow) return;
+          tbody.querySelectorAll('.drop-target').forEach(function(el) {
+            el.classList.remove('drop-target', 'border-t-2', 'border-primary-500');
+          });
+          target.classList.add('drop-target', 'border-t-2', 'border-primary-500');
+        });
+
+        tbody.addEventListener('drop', async function(e) {
+          e.preventDefault();
+          const target = e.target.closest('tr');
+          if (!target || !draggedRow || target === draggedRow) return;
+
+          tbody.insertBefore(draggedRow, target.nextSibling);
+
+          tbody.querySelectorAll('.drop-target').forEach(function(el) {
+            el.classList.remove('drop-target', 'border-t-2', 'border-primary-500');
+          });
+
+          const ids = [];
+          tbody.querySelectorAll('tr[data-id]').forEach(function(row) {
+            ids.push(parseInt(row.dataset.id));
+          });
+
+          try {
+            const res = await fetch('/admin/api/productos/reorder', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ordered_ids: ids }),
+            });
+            if (res.status === 401) { window.location.href = '/admin/login'; return; }
+            if (res.ok) {
+              const orderCells = tbody.querySelectorAll('tr[data-id] td:nth-child(4)');
+              orderCells.forEach(function(cell, i) { cell.textContent = i; });
+            } else {
+              location.reload();
+            }
+          } catch {
+            location.reload();
+          }
+        });
+      }
     </script>
   `, user);
 
@@ -468,6 +505,19 @@ export async function handleAdminProducts(env, user) {
 
 export async function handleAdminProductsApi(request, env, id) {
   DB.setEnv(env);
+
+  if (request.method === 'PUT' && id === 'reorder') {
+    try {
+      const { ordered_ids } = await request.json();
+      if (!Array.isArray(ordered_ids)) return jsonResponse({ error: 'ordered_ids requerido' }, 400);
+      for (let i = 0; i < ordered_ids.length; i++) {
+        await DB.update('products', { sort_order: i }, 'id', ordered_ids[i]);
+      }
+      return jsonResponse({ success: true });
+    } catch (e) {
+      return jsonResponse({ error: e.message || 'Error al reordenar' }, 500);
+    }
+  }
 
   if (request.method === 'GET' && id) {
     const product = await DB.get('SELECT * FROM products WHERE id = ?', [id]);
@@ -753,6 +803,65 @@ async function adminLayout(content, user) {
   return adminLayoutWithContent(content, user);
 }
 
+function renderProductTable(label, id, products) {
+  const rows = products.map(p => `
+    <tr draggable="true" data-id="${p.id}" class="hover:bg-gray-50 transition-colors">
+      <td class="px-4 py-4 w-10 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600" draggable="true">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 22a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+      </td>
+      <td class="px-6 py-4">
+        <div class="flex items-center space-x-3">
+          ${p.main_image ? `<img src="${imgUrl(p.main_image)}" alt="" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>`}
+          <div>
+            <p class="text-sm font-medium text-gray-900">${escapeHtml(p.name)}</p>
+            <p class="text-xs text-gray-500">${p.slug}</p>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4">
+        <span class="px-2 py-1 text-xs font-medium rounded-full ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${p.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+      </td>
+      <td class="px-6 py-4 text-sm text-gray-500 font-mono">${p.sort_order}</td>
+      <td class="px-6 py-4">
+        <div class="flex items-center space-x-2">
+          <button onclick="editProduct(${p.id})" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all" title="Editar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button onclick="deleteProduct(${p.id}, '${escapeHtml(p.name)}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  const emptyRow = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 text-sm">No hay productos. Creá el primero.</td></tr>';
+
+  return `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">${label}</h2>
+        <span class="text-xs text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">${products.length} producto(s)</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table id="${id}-table" class="w-full">
+          <thead class="bg-gray-50 text-left">
+            <tr>
+              <th class="px-4 py-3 w-10"></th>
+              <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Orden</th>
+              <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="${id}-tbody" class="divide-y divide-gray-100">
+            ${products.length > 0 ? rows : emptyRow}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
 async function adminLayoutWithContent(content, user) {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -770,6 +879,10 @@ async function adminLayoutWithContent(content, user) {
     .sidebar-link:hover { background: #eef2ff; color: #0000ba; }
     .form-input { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
     .form-input:focus { border-color: #0000ba; box-shadow: 0 0 0 3px rgba(0, 0, 186, 0.1); }
+    tr[draggable="true"] { cursor: grab; }
+    tr[draggable="true"]:active { cursor: grabbing; }
+    tr.dragging { opacity: 0.4; }
+    .drop-target { position: relative; }
   </style>
 </head>
 <body class="font-sans bg-gray-50 min-h-screen">

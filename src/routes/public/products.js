@@ -68,7 +68,7 @@ export async function handleProducts(env, settings) {
             <div class="stagger-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               ${type.products.length > 0 ? type.products.map(product => `
                 <div class="card-hover bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 group">
-                  <div class="relative h-56 overflow-hidden bg-gray-100">
+                  <div class="relative h-64 overflow-hidden bg-gray-100">
                     <img src="${imgUrl(product.main_image)}" alt="${escapeHtml(product.name)}" class="card-image w-full h-full object-cover" style="object-position:${product.crop_x || 50}% ${product.crop_y || 50}%" loading="lazy">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">

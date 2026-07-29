@@ -124,7 +124,7 @@ function ProductCard({ product, wa }) {
       style={{ willChange: 'transform, opacity' }}
       whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
     >
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-72 overflow-hidden">
         <img
           src={product.main_image?.startsWith('http') || product.main_image?.startsWith('/') ? product.main_image : '/media/' + (product.main_image || '')}
           alt={product.name}
@@ -367,15 +367,15 @@ function HeroSection({ settings: s }) {
             style={{ willChange: 'clip-path' }}
           >
             {titleWords.map((w, i) => (
-              <span key={i} style={{ display: 'inline-block', clipPath: 'inherit' }} aria-hidden={w.trim() === '' ? true : undefined}>
-                {w.trim() === '' ? (
-                  w
-                ) : (
+              w.trim() === '' ? (
+                <React.Fragment key={i}>{w}</React.Fragment>
+              ) : (
+                <span key={i} style={{ display: 'inline-block', clipPath: 'inherit' }}>
                   <motion.span variants={heroTitleWord} style={{ display: 'inline-block' }}>
                     {w}
                   </motion.span>
-                )}
-              </span>
+                </span>
+              )
             ))}
           </motion.h1>
 
