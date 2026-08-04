@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS product_presentations (id INTEGER PRIMARY KEY AUTOINC
 CREATE INDEX IF NOT EXISTS idx_presentations_product ON product_presentations(product_id);
 CREATE TABLE IF NOT EXISTS product_images (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER NOT NULL, image_type TEXT NOT NULL DEFAULT 'gallery' CHECK(image_type IN ('main', 'gallery')), thumbnail_path TEXT, medium_path TEXT, original_path TEXT, alt_text TEXT, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE);
 CREATE INDEX IF NOT EXISTS idx_images_product ON product_images(product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_images_unique ON product_images(product_id, image_type, original_path);
 CREATE TABLE IF NOT EXISTS site_settings (id INTEGER PRIMARY KEY AUTOINCREMENT, setting_key TEXT NOT NULL UNIQUE, setting_value TEXT, setting_group TEXT NOT NULL DEFAULT 'general', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_settings_key ON site_settings(setting_key);
 CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, subject TEXT, message TEXT NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
@@ -216,7 +217,7 @@ async function ensureDatabase(env) {
 
   // Migrate 003: insert Fideos Apetito products and gallery images if missing
   try {
-    const existing = await env.DB.prepare("SELECT id FROM products WHERE slug = ?").bind('apetito-tallarin').first();
+    const existing = await env.DB.prepare("SELECT id FROM products WHERE id = 3").first();
     if (!existing) {
       const migrate003Stmts = MIGRATE_003_SQL.split(';').map(s => s.trim()).filter(s => s.length > 0);
       for (const stmt of migrate003Stmts) {
@@ -265,6 +266,11 @@ async function ensureDatabase(env) {
       }
     }
   } catch (e) { console.error('Error updating harina gallery:', e); }
+
+  // Evita que re-seeds de product_images (INSERT OR IGNORE) dupliquen filas
+  try {
+    await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_product_images_unique ON product_images (product_id, image_type, original_path)").all();
+  } catch (e) { console.error('Error creating unique index on product_images:', e); }
 
   DB_INITIALIZED = true;
 }

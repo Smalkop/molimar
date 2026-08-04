@@ -174,6 +174,9 @@ export async function handleAdminProducts(env, user) {
       function openModal() {
         editingId = null;
         selectedGalleryKeys = [];
+        existingGallery = [];
+        pendingGalleryKeys = [];
+        removedExistingIds = [];
         document.getElementById('gallery-selected-input').value = '';
         document.getElementById('main-image-gallery').value = '';
         document.getElementById('product-form').reset();
@@ -272,7 +275,9 @@ export async function handleAdminProducts(env, user) {
 
       async function editProduct(id) {
         editingId = id;
+        existingGallery = [];
         pendingGalleryKeys = [];
+        removedExistingIds = [];
         document.getElementById('gallery-selected-input').value = '';
         document.getElementById('main-image-gallery').value = '';
         try {
@@ -315,6 +320,15 @@ export async function handleAdminProducts(env, user) {
             document.getElementById('product-presentations').value = data.presentations.map(p => p.name + ', ' + (p.weight || '') + ', ' + (p.price || '')).join('\\n');
           }
 
+          existingGallery = (data.images || [])
+            .filter(i => i.image_type === 'main' || i.image_type === 'gallery')
+            .map(i => ({
+              id: i.id,
+              type: i.image_type,
+              key: i.original_path || i.medium_path || i.thumbnail_path || '',
+            }));
+          renderGalleryPreview();
+
           document.getElementById('product-modal').classList.remove('hidden');
         } catch (e) {
           alert('Error al cargar producto');
@@ -344,6 +358,10 @@ export async function handleAdminProducts(env, user) {
 
         const mainImg = document.getElementById('product-main-image').files[0];
         if (mainImg) formData.append('main_image', mainImg);
+
+        if (removedExistingIds.length > 0) {
+          formData.append('remove_gallery_ids', removedExistingIds.join(','));
+        }
 
         const gallery = document.getElementById('product-gallery').files;
         for (const f of gallery) formData.append('gallery', f);
@@ -398,35 +416,68 @@ export async function handleAdminProducts(env, user) {
         };
       }
 
+      let existingGallery = [];
       let pendingGalleryKeys = [];
+      let removedExistingIds = [];
       function appendGalleryFromPicker(keys) {
         for (const k of keys) {
           if (!pendingGalleryKeys.includes(k)) pendingGalleryKeys.push(k);
         }
-        renderPendingGallery();
+        renderGalleryPreview();
         // Sincronizar hidden input
         document.getElementById('gallery-selected-input').value = pendingGalleryKeys.join(',');
       }
 
-      function renderPendingGallery() {
+      function renderGalleryPreview() {
         const preview = document.getElementById('gallery-preview');
-        if (pendingGalleryKeys.length === 0) {
+        const items = [];
+
+        existingGallery.forEach((img, i) => {
+          items.push({
+            token: 'E' + i,
+            url: img.key.startsWith('http') || img.key.startsWith('/') || img.key.startsWith('data:')
+              ? img.key
+              : '/media/' + encodeURIComponent(img.key),
+            label: img.type === 'main' ? 'Principal' : 'Existente',
+            removable: img.type === 'gallery',
+          });
+        });
+
+        pendingGalleryKeys.forEach((k, i) => {
+          items.push({
+            token: 'P' + i,
+            url: '/media/' + encodeURIComponent(k),
+            label: 'Galería',
+          });
+        });
+
+        if (items.length === 0) {
           preview.innerHTML = '';
           return;
         }
-        preview.innerHTML = pendingGalleryKeys.map((k, i) => \`
+
+        preview.innerHTML = items.map(item => \`
           <div class="relative group">
-            <img src="/media/\${encodeURIComponent(k)}" alt="" class="w-full h-20 object-cover rounded-lg border border-gray-200">
-            <button type="button" onclick="removePendingGallery(\${i})" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full text-xs flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity">×</button>
-            <span class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-1 py-0.5 truncate rounded-b-lg">Galería</span>
+            <img src="\${item.url}" alt="" class="w-full h-20 object-cover rounded-lg border border-gray-200">
+            \${item.removable ? \`<button type="button" onclick="removeGalleryItem('\${item.token}')" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full text-xs flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity">×</button>\` : ''}
+            <span class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-1 py-0.5 truncate rounded-b-lg">\${item.label}</span>
           </div>
         \`).join('');
       }
 
-      function removePendingGallery(i) {
-        pendingGalleryKeys.splice(i, 1);
+      function removeGalleryItem(token) {
+        if (token.charAt(0) === 'E') {
+          const i = parseInt(token.slice(1), 10);
+          const img = existingGallery[i];
+          if (!img) return;
+          if (img.id) removedExistingIds.push(img.id);
+          existingGallery.splice(i, 1);
+        } else {
+          const i = parseInt(token.slice(1), 10);
+          pendingGalleryKeys.splice(i, 1);
+        }
         document.getElementById('gallery-selected-input').value = pendingGalleryKeys.join(',');
-        renderPendingGallery();
+        renderGalleryPreview();
       }
 
       // === Drag & drop reordering ===
@@ -781,6 +832,25 @@ export async function handleAdminProductsApi(request, env, id) {
             original_path: k,
             sort_order: gallerySort++,
           });
+        }
+      }
+
+      // === Quitar imágenes existentes de la galería (sin reemplazo total) ===
+      // Solo si el usuario NO subió archivos nuevos ni eligió de la galería;
+      // si hubo reemplazo, las filas/galleries anteriores ya se eliminaron arriba.
+      const removeGalleryRaw = formData.get('remove_gallery_ids');
+      if (removeGalleryRaw && !hasNewFiles && !hasGallerySelection) {
+        const removeIds = removeGalleryRaw.split(',').map(s => s.trim()).filter(Boolean).map(Number);
+        for (const rid of removeIds) {
+          if (!rid) continue;
+          const imgs = await DB.query(
+            'SELECT * FROM product_images WHERE id = ? AND product_id = ?',
+            [rid, parseInt(id)],
+          );
+          if (imgs.length === 0) continue;
+          const img = imgs[0];
+          if ((img.original_path || '').startsWith('molipa/')) await IMAGE.delete([img]);
+          await DB.delete('product_images', 'id', rid);
         }
       }
 
