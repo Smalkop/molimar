@@ -297,16 +297,21 @@ export default {
 
     // Static files from R2
     if (pathname.startsWith('/images/') || pathname.startsWith('/css/') || pathname.startsWith('/js/')) {
-      return serveStatic(pathname.slice(1), env);
+      let key = pathname.slice(1);
+      try { key = decodeURIComponent(key); } catch {}
+      return serveStatic(key, env);
     }
 
     if (method === 'OPTIONS') {
       return optionsResponse(env);
     }
 
-    // Media files from R2
+    // Media files from R2 (los claves de imagen incluyen '/' que el navegador
+    // codifica como %2F; hay que decodificar para obtener el key real)
     if (pathname.startsWith('/media/')) {
-      return serveMedia(pathname.replace('/media/', ''), env);
+      let key = pathname.replace('/media/', '');
+      try { key = decodeURIComponent(key); } catch {}
+      return serveMedia(key, env);
     }
 
     // Favicon
