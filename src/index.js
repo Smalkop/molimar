@@ -35,6 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_products_type ON products(product_type_id);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 CREATE TABLE IF NOT EXISTS product_presentations (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER NOT NULL, name TEXT NOT NULL, weight TEXT, price REAL, is_primary INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE);
 CREATE INDEX IF NOT EXISTS idx_presentations_product ON product_presentations(product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_presentations_unique ON product_presentations(product_id, name);
 CREATE TABLE IF NOT EXISTS product_images (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER NOT NULL, image_type TEXT NOT NULL DEFAULT 'gallery' CHECK(image_type IN ('main', 'gallery')), thumbnail_path TEXT, medium_path TEXT, original_path TEXT, alt_text TEXT, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE);
 CREATE INDEX IF NOT EXISTS idx_images_product ON product_images(product_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_product_images_unique ON product_images(product_id, image_type, original_path);
@@ -271,6 +272,11 @@ async function ensureDatabase(env) {
   try {
     await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_product_images_unique ON product_images (product_id, image_type, original_path)").all();
   } catch (e) { console.error('Error creating unique index on product_images:', e); }
+
+  // Evita que re-seeds de presentaciones (INSERT OR IGNORE) dupliquen filas
+  try {
+    await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_presentations_unique ON product_presentations (product_id, name)").all();
+  } catch (e) { console.error('Error creating unique index on product_presentations:', e); }
 
   DB_INITIALIZED = true;
 }
