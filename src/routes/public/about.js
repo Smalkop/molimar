@@ -79,41 +79,7 @@ export async function handleAbout(env, settings) {
       </div>
     </section>
 
-    <!-- Proceso de Producción -->
-    <section class="py-20 bg-white">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 animate-on-scroll">
-          <span class="text-primary-600 font-semibold text-sm tracking-wider uppercase">Proceso</span>
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-3">Proceso de Producción</h2>
-          <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Cada paso es cuidadosamente controlado para garantizar la mejor calidad.</p>
-        </div>
-
-        <div class="relative">
-          <div class="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-primary-200 -translate-x-1/2"></div>
-          ${[
-            { step: '01', title: 'Selección del Trigo', desc: 'Seleccionamos los mejores granos de trigo de productores locales certificados.', icon: '🌾' },
-            { step: '02', title: 'Limpieza y Acondicionamiento', desc: 'El trigo pasa por procesos de limpieza y acondicionamiento para eliminar impurezas.', icon: '🧹' },
-            { step: '03', title: 'Molienda', desc: 'Utilizamos molinos de última generación que preservan las propiedades del grano.', icon: '⚙️' },
-            { step: '04', title: 'Tamizado y Clasificación', desc: 'La harina se tamiza y clasifica según su granulometría y calidad.', icon: '🔬' },
-            { step: '05', title: 'Control de Calidad', desc: 'Cada lote es analizado en nuestro laboratorio para garantizar su pureza y calidad.', icon: '✅' },
-            { step: '06', title: 'Empaque y Distribución', desc: 'Empacado en condiciones óptimas y distribuido a todo el país.', icon: '📦' },
-          ].map((item, i) => `
-            <div class="relative flex flex-col ${i % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center mb-12 lg:mb-16 animate-on-scroll">
-              <div class="flex-1 ${i % 2 === 0 ? 'lg:text-right lg:pr-12' : 'lg:text-left lg:pl-12'}">
-                <span class="text-primary-600 font-bold text-sm">Paso ${item.step}</span>
-                <h3 class="text-xl font-bold text-gray-900 mt-1 mb-3">${item.title}</h3>
-                <p class="text-gray-600 leading-relaxed">${item.desc}</p>
-              </div>
-              <div class="relative z-10 flex items-center justify-center w-16 h-16 rounded-full bg-primary-600 text-white text-2xl shadow-lg my-4 lg:my-0 shrink-0">
-                ${item.icon}
-              </div>
-              <div class="flex-1 ${i % 2 === 0 ? 'lg:pl-12' : 'lg:pr-12'} hidden lg:block"></div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-  `;
+    `;
 
   return htmlResponse(Layout({
     children: content,

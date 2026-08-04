@@ -54,8 +54,8 @@ export async function handleBranches(env, settings) {
   const content = `
     <section class="bg-gradient-to-br from-gray-900 to-gray-800 pt-32 pb-20">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <span class="text-primary-400 font-semibold text-sm tracking-wider uppercase animate-on-scroll">Sucursales</span>
-        <h1 class="text-4xl md:text-5xl font-bold text-white mt-4 mb-6 animate-on-scroll">Nuestras Sucursales</h1>
+        <span class="text-primary-400 font-semibold text-sm tracking-wider uppercase animate-on-scroll">Centros de Distribución</span>
+        <h1 class="text-4xl md:text-5xl font-bold text-white mt-4 mb-6 animate-on-scroll">Centros de Distribución</h1>
         <p class="text-gray-300 text-lg max-w-3xl mx-auto animate-on-scroll">Estamos presentes en los principales puntos del Paraguay para brindarte atención cercana y distribución eficiente.</p>
       </div>
     </section>
@@ -117,8 +117,8 @@ export async function handleBranches(env, settings) {
 
   return htmlResponse(Layout({
     children: content,
-    title: 'Sucursales',
-    description: 'Conocé todas las sucursales de Molipar en Paraguay. Planta Central y puntos de venta con atención personalizada.',
+    title: 'Centros de Distribución',
+    description: 'Conocé todos los centros de distribución de Molipar en Paraguay. Planta Central y puntos de venta con atención personalizada.',
     settings,
     currentPath: '/sucursales',
   }));

@@ -7,7 +7,7 @@
 -- Product types
 INSERT INTO product_types (name, slug, description, icon, sort_order) VALUES
 ('Harinas', 'harinas', 'Harinas de trigo de alta calidad para panificación, repostería y uso industrial', 'flour', 1),
-('Fideos', 'fideos', 'Pastas y fideos elaborados con harinas seleccionadas', 'pasta', 2);
+('Fideos', 'fideos', 'Fideos elaborados con la mejor calidad de Molipar', 'pasta', 2);
 
 -- Categories for Harinas
 INSERT INTO categories (product_type_id, name, slug, description, sort_order) VALUES

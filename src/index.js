@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, 
 
 const SEED_SQL = `
 INSERT OR IGNORE INTO product_types (id, name, slug, description, icon, sort_order) VALUES (1, 'Harinas', 'harinas', 'Harinas de trigo de alta calidad para panificación, repostería y uso industrial', 'flour', 1);
-INSERT OR IGNORE INTO product_types (id, name, slug, description, icon, sort_order) VALUES (2, 'Fideos', 'fideos', 'Pastas y fideos elaborados con harinas seleccionadas', 'pasta', 2);
+INSERT OR IGNORE INTO product_types (id, name, slug, description, icon, sort_order) VALUES (2, 'Fideos', 'fideos', 'Fideos elaborados con la mejor calidad de Molipar', 'pasta', 2);
 INSERT OR IGNORE INTO categories (id, product_type_id, name, slug, description, sort_order) VALUES (1, 1, 'Harinas Panaderas', 'harinas-panaderas', 'Harinas especiales para panificación artesanal e industrial', 1);
 INSERT OR IGNORE INTO categories (id, product_type_id, name, slug, description, sort_order) VALUES (2, 1, 'Harinas Reposteras', 'harinas-reposteras', 'Harinas finas para repostería y pastelería', 2);
 INSERT OR IGNORE INTO categories (id, product_type_id, name, slug, description, sort_order) VALUES (3, 1, 'Harinas Industriales', 'harinas-industriales', 'Harinas para uso industrial y procesos productivos', 3);
@@ -204,6 +204,11 @@ async function ensureDatabase(env) {
       await env.DB.prepare("UPDATE site_settings SET setting_value = ?, updated_at = datetime('now') WHERE setting_key = ?").bind(val, key).all();
     } catch {}
   }
+
+  // Setear descripción del tipo "Fideos" (idempotente)
+  try {
+    await env.DB.prepare("UPDATE product_types SET description = ? WHERE slug = 'fideos'").bind('Fideos elaborados con la mejor calidad de Molipar').all();
+  } catch {}
 
   // Add crop columns to existing products table (safe to re-run)
   try { await env.DB.prepare("ALTER TABLE products ADD COLUMN crop_x INTEGER DEFAULT 50").all(); } catch {}
