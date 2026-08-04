@@ -133,6 +133,10 @@ const AUTH = {
     return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
   },
 
+  isSecretConfigured() {
+    return Boolean(AUTH.env && AUTH.env.JWT_SECRET);
+  },
+
   invalidatedTokens: new Set(),
 
   isTokenInvalidated(token) {

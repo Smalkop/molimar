@@ -149,29 +149,39 @@ export async function handleLoginApi(request, env) {
   AUTH.setEnv(env);
 
   const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
-  const allowed = await checkRateLimit(ip, data.email);
-  if (!allowed) {
-    return jsonResponse({ error: `Demasiados intentos. Esperá ${LOCKOUT_MINUTES} minutos.` }, 429);
+
+  try {
+    const allowed = await checkRateLimit(ip, data.email);
+    if (!allowed) {
+      return jsonResponse({ error: `Demasiados intentos. Esperá ${LOCKOUT_MINUTES} minutos.` }, 429);
+    }
+
+    const result = await AUTH.authenticate(data.email, data.password);
+
+    if (!result) {
+      await recordAttempt(ip, data.email);
+      return jsonResponse({ error: 'Credenciales inválidas' }, 401);
+    }
+
+    await clearAttempts(ip, data.email);
+
+    const headers = new Headers({
+      'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.APP_ENV === 'production' ? '; Secure' : ''}`,
+      'Content-Type': 'application/json',
+    });
+
+    return new Response(JSON.stringify({ success: true, user: result.user }), {
+      status: 200,
+      headers,
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    const isSecretError = err && String(err.message || '').includes('JWT_SECRET');
+    return jsonResponse(
+      { error: isSecretError ? 'Servidor sin configurar correctamente. Contactá al administrador.' : 'Error interno del servidor' },
+      500
+    );
   }
-
-  const result = await AUTH.authenticate(data.email, data.password);
-
-  if (!result) {
-    await recordAttempt(ip, data.email);
-    return jsonResponse({ error: 'Credenciales inválidas' }, 401);
-  }
-
-  await clearAttempts(ip, data.email);
-
-  const headers = new Headers({
-    'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.APP_ENV === 'production' ? '; Secure' : ''}`,
-    'Content-Type': 'application/json',
-  });
-
-  return new Response(JSON.stringify({ success: true, user: result.user }), {
-    status: 200,
-    headers,
-  });
 }
 
 export async function handleLogout(request) {
