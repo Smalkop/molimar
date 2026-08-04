@@ -129,7 +129,7 @@ function ProductCard({ product, wa }) {
           src={product.main_image?.startsWith('http') || product.main_image?.startsWith('/') ? product.main_image : '/media/' + (product.main_image || '')}
           alt={product.name}
           className="w-full h-full object-cover"
-          style={{ objectPosition: 'center' }}
+          style={{ objectPosition: `${product.crop_x ?? 50}% ${product.crop_y ?? 50}%` }}
           loading="lazy"
         />
         <span className="absolute top-3 left-3 px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">{product.type_name}</span>

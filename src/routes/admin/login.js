@@ -164,7 +164,7 @@ export async function handleLoginApi(request, env) {
   await clearAttempts(ip, data.email);
 
   const headers = new Headers({
-    'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+    'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.APP_ENV === 'production' ? '; Secure' : ''}`,
     'Content-Type': 'application/json',
   });
 

@@ -8,7 +8,7 @@ const MAGIC_BYTES = {
     [0x89, 0x50, 0x4E, 0x47],
   ],
   'image/webp': [
-    [0x52, 0x49, 0x46, 0x46],
+    [0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50],
   ],
   'image/avif': [
     [0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66],
@@ -24,7 +24,7 @@ function validateMagicBytes(buffer, mimeType) {
   if (!signatures) return true;
   const bytes = new Uint8Array(buffer.slice(0, 16));
   return signatures.some(sig =>
-    sig.every((b, i) => b === bytes[i])
+    sig.every((b, i) => b === null || b === bytes[i])
   );
 }
 
@@ -49,24 +49,17 @@ const IMAGE = {
     const uuid = crypto.randomUUID();
     const basePath = `molipa/${productId}/${uuid}`;
 
-    const paths = {
-      original: `${basePath}_original`,
-      medium: `${basePath}_medium`,
-      thumbnail: `${basePath}_thumbnail`,
-    };
-
     const ext = IMAGE.getExtension(file.type);
+    const key = basePath + ext;
 
-    await Promise.all([
-      STORAGE.upload(paths.original + ext, buffer, file.type),
-      STORAGE.upload(paths.medium + ext, buffer, file.type),
-      STORAGE.upload(paths.thumbnail + ext, buffer, file.type),
-    ]);
+    // Se guarda una sola copia del archivo en R2. Los tres campos apuntan al
+    // mismo key para mantener compatibilidad con el esquema de la base de datos.
+    await STORAGE.upload(key, buffer, file.type);
 
     return {
-      original: paths.original + ext,
-      medium: paths.medium + ext,
-      thumbnail: paths.thumbnail + ext,
+      original: key,
+      medium: key,
+      thumbnail: key,
     };
   },
 
@@ -89,7 +82,7 @@ const IMAGE = {
       if (img.original_path) paths.push(img.original_path);
     }
     if (paths.length > 0) {
-      await STORAGE.deleteMultiple(paths);
+      await STORAGE.deleteMultiple([...new Set(paths)]);
     }
   },
 

@@ -2,6 +2,10 @@ import { Layout } from '../../components/Layout.js';
 import { htmlResponse, normalizeWhatsApp } from '../../utils/html.js';
 import DB from '../../services/database.js';
 
+export function jsonToScript(data) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
 export async function handleHome(env, settings) {
   DB.setEnv(env);
 
@@ -48,10 +52,10 @@ export async function handleHome(env, settings) {
   const content = `
     <div id="homepage-root"></div>
     <script>
-      window.__SETTINGS__ = ${JSON.stringify(settingsData)};
-      window.__HARINAS__ = ${JSON.stringify(harinas)};
-      window.__FIDEOS__ = ${JSON.stringify(fideos)};
-      window.__WHATSAPP__ = ${JSON.stringify(normalizeWhatsApp(settings.whatsapp) || '595986288006')};
+      window.__SETTINGS__ = ${jsonToScript(settingsData)};
+      window.__HARINAS__ = ${jsonToScript(harinas)};
+      window.__FIDEOS__ = ${jsonToScript(fideos)};
+      window.__WHATSAPP__ = ${jsonToScript(normalizeWhatsApp(settings.whatsapp) || '595986288006')};
     </script>
     <script src="/js/homepage.bundle.js" defer></script>
   `;

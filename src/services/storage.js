@@ -51,6 +51,14 @@ const STORAGE = {
     return object;
   },
 
+  // Indica si un objeto existe en R2.
+  async exists(key) {
+    if (!key) return false;
+    const env = STORAGE.getEnv();
+    const object = await env.R2.get(key);
+    return object !== null;
+  },
+
   getEnv() {
     return { R2: STORAGE._r2 };
   },

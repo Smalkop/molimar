@@ -48,26 +48,3 @@ export function schemaOrganization(data) {
     ].filter(Boolean),
   };
 }
-
-export function schemaProduct(product) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    description: product.short_description || '',
-    image: product.main_image ? '/media/' + product.main_image : '',
-  };
-}
-
-export function schemaBreadcrumb(items) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: items.map((item, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      name: item.name,
-      item: item.url,
-    })),
-  };
-}

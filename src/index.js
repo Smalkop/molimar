@@ -246,18 +246,24 @@ async function ensureDatabase(env) {
     }
   } catch (e) { console.error('Error seeding sales_regions:', e); }
 
-  // Gallery images for existing harinas (run on every startup, cleanup + reinsert)
+  // Gallery images for harinas (idempotente: inserta solo las que faltan)
   try {
-    await env.DB.prepare("DELETE FROM product_images WHERE product_id = 1 AND original_path IN ('/images/harina-000-25kg-b.jpg','/images/harina-000-50kg-b.jpg','/images/harina-000-0000-5kg-pack.jpg','/images/harina-000-nutricional.jpg')").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-25kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 25kg', 10)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-50kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 50kg', 11)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-0000-5kg-pack.jpg', 'Harina de Trigo Tipo 000 - Pack 5kg', 12)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (1, 'gallery', '/images/harina-000-nutricional.jpg', 'Harina de Trigo Tipo 000 - Información Nutricional', 13)").all();
-    await env.DB.prepare("DELETE FROM product_images WHERE product_id = 2 AND original_path IN ('/images/harina-0000-25kg-b.jpg','/images/harina-0000-50kg-b.jpg','/images/harina-0000-5kg-b.jpg','/images/harina-0000-nutricional.jpg')").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-25kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 25kg', 10)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-50kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 50kg', 11)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-5kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 5kg', 12)").all();
-    await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (2, 'gallery', '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13)").all();
+    const harinaGallery = [
+      [1, '/images/harina-000-25kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 25kg', 10],
+      [1, '/images/harina-000-50kg-b.jpg', 'Harina de Trigo Tipo 000 - Bolsa 50kg', 11],
+      [1, '/images/harina-000-0000-5kg-pack.jpg', 'Harina de Trigo Tipo 000 - Pack 5kg', 12],
+      [1, '/images/harina-000-nutricional.jpg', 'Harina de Trigo Tipo 000 - Información Nutricional', 13],
+      [2, '/images/harina-0000-25kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 25kg', 10],
+      [2, '/images/harina-0000-50kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 50kg', 11],
+      [2, '/images/harina-0000-5kg-b.jpg', 'Harina de Trigo Tipo 0000 - Bolsa 5kg', 12],
+      [2, '/images/harina-0000-nutricional.jpg', 'Harina de Trigo Tipo 0000 - Información Nutricional', 13],
+    ];
+    for (const [productId, path, alt, sortOrder] of harinaGallery) {
+      const existing = await env.DB.prepare("SELECT id FROM product_images WHERE product_id = ? AND original_path = ?").bind(productId, path).first();
+      if (!existing) {
+        await env.DB.prepare("INSERT INTO product_images (product_id, image_type, original_path, alt_text, sort_order) VALUES (?, 'gallery', ?, ?, ?)").bind(productId, path, alt, sortOrder).all();
+      }
+    }
   } catch (e) { console.error('Error updating harina gallery:', e); }
 
   DB_INITIALIZED = true;
@@ -358,11 +364,11 @@ export default {
 
     if (pathname.startsWith('/admin/api/usuarios')) {
       const id = pathname.replace('/admin/api/usuarios', '').replace(/^\//, '') || null;
-      return handleAdminUsersApi(request, env, id);
+      return handleAdminUsersApi(request, env, id, auth.user);
     }
 
     if (pathname === '/admin/configuracion' && method === 'GET') return handleAdminSettings(env, auth.user);
-    if (pathname === '/admin/api/configuracion' && method === 'PUT') return handleAdminSettingsApi(request, env);
+    if (pathname === '/admin/api/configuracion' && method === 'PUT') return handleAdminSettingsApi(request, env, auth.user);
 
     if (pathname === '/admin/mensajes' && method === 'GET') return handleAdminMessages(env, auth.user);
 

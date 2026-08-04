@@ -56,22 +56,6 @@ const DB = {
     return result;
   },
 
-  async paginate(sql, params = [], page = 1, perPage = 20) {
-    const countSql = `SELECT COUNT(*) as total FROM (${sql})`;
-    const countResult = await DB.env.DB.prepare(countSql).bind(...params).first();
-    const total = countResult.total || 0;
-    const offset = (page - 1) * perPage;
-    const dataSql = `${sql} LIMIT ? OFFSET ?`;
-    const data = await DB.env.DB.prepare(dataSql).bind(...params, perPage, offset).all();
-    return {
-      data: data.results || [],
-      total,
-      page,
-      perPage,
-      totalPages: Math.ceil(total / perPage),
-    };
-  },
-
   setEnv(env) {
     DB.env = env;
   },

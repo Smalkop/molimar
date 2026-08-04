@@ -20,17 +20,6 @@ export function validatePhone(phone) {
   return /^[\d\s\-\+\(\)]{7,20}$/.test(phone);
 }
 
-export function sanitizeString(str) {
-  if (!str) return '';
-  return str
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;')
-    .trim();
-}
-
 export function validateProduct(data) {
   const errors = [];
   const nameErr = validateRequired(data.name, 'Nombre');

@@ -49,7 +49,16 @@ export function Layout({ children, title, description, image, url, settings, cur
     }
   </script>
   <style>${ANIMATIONS_CSS}</style>
-  <script type="application/ld+json">${JSON.stringify(schemaOrg)}</script>
+  <noscript>
+    <style>
+      .animate-on-scroll, .animate-fade-left, .animate-fade-right,
+      .animate-scale-in, .stagger-children, .stagger-children > * {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style>
+  </noscript>
+  <script type="application/ld+json">${JSON.stringify(schemaOrg).replace(/</g, '\\u003c')}</script>
   ${extraHead}
 </head>
 <body class="font-sans text-gray-800 antialiased bg-white">

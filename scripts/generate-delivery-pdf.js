@@ -87,7 +87,7 @@ async function main() {
 
   title('2. Resumen del Proyecto');
   body('El sitio web de Molipar S.A. incluye:');
-  bullet('Sitio web público con presencia profesional en internet: página de inicio, historia de la empresa, catálogo de productos (harinas y fideos), sucursales, venta directa por regiones, calidad y contacto.');
+  bullet('Sitio web público con presencia profesional en internet: página de inicio, historia de la empresa, catálogo de productos (harinas y fideos), centros de distribución, venta directa por regiones, calidad y contacto.');
   bullet('Panel de administración privado donde el personal de Molipar puede gestionar productos, ver mensajes de contacto, administrar usuarios, configurar datos de la empresa y gestionar regiones de venta directa.');
   bullet('Catálogo digital completo con imágenes, presentaciones y galería de fotos para cada producto.');
   bullet('Formulario de contacto que envía los mensajes directamente al panel de administración.');
@@ -98,7 +98,7 @@ async function main() {
   bullet('Inicio: Portada principal con presentación de la empresa, productos destacados y enlaces a las secciones principales.');
   bullet('Nosotros: Historia de Molipar, misión, visión, valores y el proceso de producción.');
   bullet('Productos: Catálogo completo de harinas y fideos con fotos, presentaciones y galería de imágenes.');
-  bullet('Sucursales: Direcciones y datos de contacto de todas las sucursales.');
+  bullet('Centros de Distribución: Direcciones y datos de contacto de todos los centros de distribución.');
   bullet('Venta Directa: Regiones habilitadas para venta directa con teléfonos de contacto.');
   bullet('Calidad: Información sobre certificaciones y controles de calidad.');
   bullet('Contacto: Formulario para que clientes envíen consultas directamente.');
