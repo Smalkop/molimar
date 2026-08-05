@@ -55,32 +55,6 @@ export async function handleQuality(env, settings) {
       </div>
     </section>
 
-    <!-- Certificaciones -->
-    <section class="py-20 bg-gray-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 animate-on-scroll">
-          <span class="text-primary-600 font-semibold text-sm tracking-wider uppercase">Certificaciones</span>
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-3">Avalan nuestra calidad</h2>
-          <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Nuestros procesos y productos están certificados por organismos nacionales e internacionales.</p>
-        </div>
-
-        <div class="stagger-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          ${[
-            { title: 'ISO 22000', desc: 'Sistema de Gestión de Inocuidad Alimentaria', icon: '🌐' },
-            { title: 'HACCP', desc: 'Análisis de Peligros y Puntos Críticos de Control', icon: '✅' },
-            { title: 'Kosher', desc: 'Certificación Kosher para nuestros productos', icon: '✡️' },
-            { title: 'BPM', desc: 'Buenas Prácticas de Manufactura', icon: '🏭' },
-          ].map(cert => `
-            <div class="card-hover bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
-              <div class="text-4xl mb-4">${cert.icon}</div>
-              <h3 class="text-lg font-bold text-gray-900 mb-3">${cert.title}</h3>
-              <p class="text-gray-600 text-sm">${cert.desc}</p>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-
     <!-- Controles de Calidad -->
     <section class="py-20 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -116,7 +90,7 @@ export async function handleQuality(env, settings) {
   return htmlResponse(Layout({
     children: content,
     title: 'Calidad',
-    description: 'Compromiso con la calidad, certificaciones y controles en la producción de harinas y fideos Molipar.',
+    description: 'Compromiso con la calidad y controles en la producción de harinas y fideos Molipar.',
     settings,
     currentPath: '/calidad',
   }));
