@@ -36,14 +36,19 @@ const DB = {
     return result;
   },
 
-  async update(table, data, whereKey, whereValue) {
+  async update(table, data, whereKey, whereValue, opts = {}) {
     validateTableName(table);
     validateColumnName(whereKey);
     const keys = Object.keys(data);
     keys.forEach(validateColumnName);
     const values = Object.values(data);
-    const setClause = keys.map(k => `${k} = ?`).join(', ');
-    const sql = `UPDATE ${table} SET ${setClause}, updated_at = datetime('now') WHERE ${whereKey} = ?`;
+    const setParts = keys.map(k => `${k} = ?`);
+    // Añadimos updated_at solo si la tabla lo soporta (default: true).
+    if (opts.withTimestamp !== false) {
+      setParts.push(`updated_at = datetime('now')`);
+    }
+    const setClause = setParts.join(', ');
+    const sql = `UPDATE ${table} SET ${setClause} WHERE ${whereKey} = ?`;
     const result = await DB.env.DB.prepare(sql).bind(...values, whereValue).run();
     return result;
   },

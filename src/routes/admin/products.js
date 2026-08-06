@@ -387,7 +387,9 @@ export async function handleAdminProducts(env, user) {
         btn.textContent = 'Guardar Producto';
       });
 
-      async function deleteProduct(id, name) {
+      async function deleteProduct(el) {
+        const id = el.dataset.id;
+        const name = el.dataset.name;
         if (!confirm('¿Eliminar "' + name + '"? Esta acción no se puede deshacer.')) return;
         try {
           const res = await fetch('/admin/api/productos/' + id, { method: 'DELETE' });
@@ -555,6 +557,26 @@ export async function handleAdminProducts(env, user) {
   return htmlResponse(html);
 }
 
+function parsePresentations(raw, productId) {
+  if (!raw) return [];
+  const lines = String(raw).split('\n').map(s => s.trim()).filter(Boolean);
+  return lines.map((line, i) => {
+    const parts = line.split(',').map(s => s.trim());
+    let price = null;
+    if (parts[2]) {
+      const n = parseFloat(parts[2]);
+      price = Number.isFinite(n) ? n : null;
+    }
+    return {
+      product_id: productId,
+      name: parts[0] || `Presentación ${i + 1}`,
+      weight: parts[1] || null,
+      price,
+      sort_order: i,
+    };
+  });
+}
+
 export async function handleAdminProductsApi(request, env, id) {
   DB.setEnv(env);
 
@@ -616,16 +638,9 @@ export async function handleAdminProductsApi(request, env, id) {
 
       const presentationsRaw = formData.get('presentations');
       if (presentationsRaw) {
-        const lines = presentationsRaw.split('\n').filter(Boolean);
-        for (let i = 0; i < lines.length; i++) {
-          const parts = lines[i].split(',').map(s => s.trim());
-          await DB.insert('product_presentations', {
-            product_id: productId,
-            name: parts[0] || `Presentación ${i + 1}`,
-            weight: parts[1] || null,
-            price: parts[2] ? parseFloat(parts[2]) : null,
-            sort_order: i,
-          });
+        const presentations = parsePresentations(presentationsRaw, productId);
+        for (const p of presentations) {
+          await DB.insert('product_presentations', p);
         }
       }
 
@@ -729,16 +744,9 @@ export async function handleAdminProductsApi(request, env, id) {
       await DB.delete('product_presentations', 'product_id', parseInt(id));
       const presentationsRaw = formData.get('presentations');
       if (presentationsRaw) {
-        const lines = presentationsRaw.split('\n').filter(Boolean);
-        for (let i = 0; i < lines.length; i++) {
-          const parts = lines[i].split(',').map(s => s.trim());
-          await DB.insert('product_presentations', {
-            product_id: parseInt(id),
-            name: parts[0] || `Presentación ${i + 1}`,
-            weight: parts[1] || null,
-            price: parts[2] ? parseFloat(parts[2]) : null,
-            sort_order: i,
-          });
+        const presentations = parsePresentations(presentationsRaw, parseInt(id));
+        for (const p of presentations) {
+          await DB.insert('product_presentations', p);
         }
       }
 
@@ -807,7 +815,9 @@ export async function handleAdminProductsApi(request, env, id) {
           // de la galería (gallery/) siguen siendo reutilizables.
           const toDelete = existingImages.filter(i => (i.original_path || '').startsWith('molipa/'));
           if (toDelete.length > 0) await IMAGE.delete(toDelete);
-          await DB.delete('product_images', 'product_id', parseInt(id));
+          // Solo borramos las filas de galería; conservamos la 'main' para no
+          // perder la imagen principal ni generar fugas en R2 al final.
+          await DB.run('DELETE FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'gallery']);
         }
         let gallerySort = 1;
         for (const f of galleryFiles) {
@@ -904,7 +914,7 @@ function renderProductTable(label, id, products) {
           <button onclick="editProduct(${p.id})" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all" title="Editar">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
-          <button onclick="deleteProduct(${p.id}, '${escapeHtml(p.name)}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
+          <button onclick="deleteProduct(this)" data-id="${p.id}" data-name="${p.name}" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>

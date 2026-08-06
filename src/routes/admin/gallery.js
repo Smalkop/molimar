@@ -88,7 +88,7 @@ export async function handleAdminGallery(env, user) {
       }
 
       function escapeAttr(s) {
-        return String(s).replace(/&/g,'&').replace(/"/g,'"').replace(/'/g,'&#39;').replace(/</g,'<').replace(/>/g,'>');
+        return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
 
       function openLightbox(src) {

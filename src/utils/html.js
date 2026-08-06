@@ -3,6 +3,7 @@ const ALLOWED_ORIGIN = (env) => (env && env.SITE_URL) || '';
 export function sanitizeString(str) {
   if (!str) return '';
   return String(str)
+    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')

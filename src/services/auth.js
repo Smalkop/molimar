@@ -8,6 +8,34 @@ function validateTableName(name) {
   }
 }
 
+// Base64url seguro para UTF-8 (evita que btoa/atob rompan con chars > U+00FF,
+// p. ej. acentos o emojis, y produce tokens compatibles con JWT).
+function bytesToB64url(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function b64urlDecodeToStr(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function b64urlDecodeToBytes(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function b64urlEncode(str) {
+  return bytesToB64url(new TextEncoder().encode(str));
+}
+
 function generateSalt() {
   return crypto.getRandomValues(new Uint8Array(16));
 }
@@ -69,8 +97,8 @@ const AUTH = {
     };
 
     const encoder = new TextEncoder();
-    const headerB64 = btoa(JSON.stringify(header));
-    const payloadB64 = btoa(JSON.stringify(payload));
+    const headerB64 = b64urlEncode(JSON.stringify(header));
+    const payloadB64 = b64urlEncode(JSON.stringify(payload));
     const signatureInput = `${headerB64}.${payloadB64}`;
 
     const secret = AUTH.getSecret();
@@ -83,7 +111,7 @@ const AUTH = {
     );
 
     const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(signatureInput));
-    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    const signatureB64 = bytesToB64url(new Uint8Array(signature));
 
     return `${signatureInput}.${signatureB64}`;
   },
@@ -108,12 +136,12 @@ const AUTH = {
         ['verify']
       );
 
-      const signature = Uint8Array.from(atob(signatureB64), c => c.charCodeAt(0));
+      const signature = b64urlDecodeToBytes(signatureB64);
       const valid = await crypto.subtle.verify('HMAC', key, signature, encoder.encode(signatureInput));
 
       if (!valid) return null;
 
-      const payload = JSON.parse(atob(payloadB64));
+      const payload = JSON.parse(b64urlDecodeToStr(payloadB64));
       if (payload.exp < Math.floor(Date.now() / 1000)) return null;
 
       return payload;

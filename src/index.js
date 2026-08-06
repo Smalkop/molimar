@@ -408,7 +408,7 @@ export default {
 
     if (pathname.startsWith('/admin/api/venta-directa')) {
       const id = pathname.replace('/admin/api/venta-directa', '').replace(/^\//, '') || null;
-      return handleAdminDirectSalesApi(request, env, id);
+      return handleAdminDirectSalesApi(request, env, id, auth.user);
     }
 
     if (pathname === '/admin/galeria' && method === 'GET') return handleAdminGallery(env, auth.user);

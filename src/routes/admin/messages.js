@@ -1,4 +1,4 @@
-import { htmlResponse, jsonResponse, escapeHtml, formatDate } from '../../utils/html.js';
+import { htmlResponse, jsonResponse, escapeHtml } from '../../utils/html.js';
 import { adminLayout } from '../../components/adminLayout.js';
 import DB from '../../services/database.js';
 
@@ -68,6 +68,15 @@ export async function handleAdminMessages(env, user) {
     </div>
 
     <script>
+      function esc(s) {
+        if (s == null) return '';
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
       async function viewMessage(id) {
         const res = await fetch('/admin/api/mensajes/' + id);
         if (res.status === 401) { window.location.href = '/admin/login'; return; }
@@ -75,13 +84,13 @@ export async function handleAdminMessages(env, user) {
         if (!res.ok) return;
         document.getElementById('message-content').innerHTML = \`
           <div class="grid grid-cols-2 gap-4 pb-4 border-b border-gray-100">
-            <div><p class="text-gray-500 text-xs">Nombre</p><p class="font-medium text-gray-900">\${m.name}</p></div>
-            <div><p class="text-gray-500 text-xs">Email</p><p class="font-medium text-gray-900">\${m.email}</p></div>
-            \${m.phone ? '<div><p class="text-gray-500 text-xs">Teléfono</p><p class="font-medium text-gray-900">' + m.phone + '</p></div>' : ''}
-            \${m.subject ? '<div><p class="text-gray-500 text-xs">Asunto</p><p class="font-medium text-gray-900">' + m.subject + '</p></div>' : ''}
+            <div><p class="text-gray-500 text-xs">Nombre</p><p class="font-medium text-gray-900">\${esc(m.name)}</p></div>
+            <div><p class="text-gray-500 text-xs">Email</p><p class="font-medium text-gray-900">\${esc(m.email)}</p></div>
+            \${m.phone ? '<div><p class="text-gray-500 text-xs">Teléfono</p><p class="font-medium text-gray-900">' + esc(m.phone) + '</p></div>' : ''}
+            \${m.subject ? '<div><p class="text-gray-500 text-xs">Asunto</p><p class="font-medium text-gray-900">' + esc(m.subject) + '</p></div>' : ''}
             <div><p class="text-gray-500 text-xs">Fecha</p><p class="font-medium text-gray-900">\${new Date(m.created_at).toLocaleString('es-AR')}</p></div>
           </div>
-          <div><p class="text-gray-500 text-xs mb-2">Mensaje</p><p class="text-gray-900 leading-relaxed">\${m.message}</p></div>
+          <div><p class="text-gray-500 text-xs mb-2">Mensaje</p><p class="text-gray-900 leading-relaxed">\${esc(m.message)}</p></div>
         \`;
         document.getElementById('message-modal').classList.remove('hidden');
 
