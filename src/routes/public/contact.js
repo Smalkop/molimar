@@ -219,6 +219,28 @@ export async function handleContactSubmit(request, env) {
     return jsonResponse({ error: 'Datos inválidos' }, 400);
   }
 
+  DB.setEnv(env);
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const MAX_CONTACT_ATTEMPTS = 5;
+  const CONTACT_LOCKOUT_MS = 60 * 60 * 1000;
+
+  try {
+    const now = Date.now();
+    const row = await DB.get('SELECT attempts, first_attempt FROM contact_attempts WHERE ip = ?', [ip]);
+    if (row) {
+      const elapsed = now - row.first_attempt;
+      if (elapsed < CONTACT_LOCKOUT_MS && row.attempts >= MAX_CONTACT_ATTEMPTS) {
+        return jsonResponse({ error: 'Demasiados mensajes enviados. Esperá 1 hora.' }, 429);
+      }
+      if (elapsed >= CONTACT_LOCKOUT_MS) {
+        await DB.run('DELETE FROM contact_attempts WHERE ip = ?', [ip]);
+      }
+    }
+  } catch (e) {
+    console.error('contact rate-limit check:', e);
+  }
+
   const errors = validateContact(data);
   if (errors.length > 0) {
     return jsonResponse({ error: errors.join('. ') }, 400);
@@ -232,8 +254,24 @@ export async function handleContactSubmit(request, env) {
     message: sanitizeString(data.message),
   };
 
-  DB.setEnv(env);
-  await DB.insert('contact_messages', sanitized);
+  try {
+    await DB.insert('contact_messages', sanitized);
+  } catch (e) {
+    console.error('contact insert:', e);
+    return jsonResponse({ error: 'Error al enviar el mensaje' }, 500);
+  }
+
+  try {
+    const now = Date.now();
+    const row = await DB.get('SELECT attempts, first_attempt FROM contact_attempts WHERE ip = ?', [ip]);
+    if (row) {
+      await DB.run('UPDATE contact_attempts SET attempts = attempts + 1 WHERE ip = ?', [ip]);
+    } else {
+      await DB.run('INSERT INTO contact_attempts (ip, attempts, first_attempt) VALUES (?, 1, ?)', [ip, now]);
+    }
+  } catch (e) {
+    console.error('contact rate-limit record:', e);
+  }
 
   return jsonResponse({ success: true, message: 'Mensaje enviado correctamente' });
 }

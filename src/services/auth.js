@@ -78,7 +78,12 @@ const AUTH = {
     try {
       const salt = parseHex(saltHex);
       const hash = await deriveKey(password, salt);
-      return hex(hash) === hashHex;
+      const a = hex(hash);
+      const b = hashHex;
+      if (a.length !== b.length) return false;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+      return diff === 0;
     } catch {
       return false;
     }
@@ -92,6 +97,8 @@ const AUTH = {
       name: user.name,
       email: user.email,
       role: user.role,
+      fpc: user.force_password_change ? 1 : 0,
+      jti: crypto.randomUUID(),
       iat: now,
       exp: now + 86400,
     };
@@ -118,13 +125,16 @@ const AUTH = {
 
   async verifyToken(token) {
     try {
-      if (AUTH.isTokenInvalidated(token)) return null;
+      if (await AUTH.isTokenInvalidated(token)) return null;
 
       const parts = token.split('.');
       if (parts.length !== 3) return null;
 
       const [headerB64, payloadB64, signatureB64] = parts;
       const signatureInput = `${headerB64}.${payloadB64}`;
+
+      const header = JSON.parse(b64urlDecodeToStr(headerB64));
+      if (header.alg !== 'HS256' || header.typ !== 'JWT') return null;
 
       const encoder = new TextEncoder();
       const secret = AUTH.getSecret();
@@ -141,8 +151,9 @@ const AUTH = {
 
       if (!valid) return null;
 
+      const now = Math.floor(Date.now() / 1000);
       const payload = JSON.parse(b64urlDecodeToStr(payloadB64));
-      if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+      if (typeof payload.exp !== 'number' || payload.exp < now) return null;
 
       return payload;
     } catch {
@@ -158,21 +169,44 @@ const AUTH = {
     if (!valid) return null;
 
     const token = await AUTH.generateToken(user);
-    return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
+    return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role, force_password_change: user.force_password_change ? 1 : 0 } };
   },
 
   isSecretConfigured() {
     return Boolean(AUTH.env && AUTH.env.JWT_SECRET);
   },
 
-  invalidatedTokens: new Set(),
-
-  isTokenInvalidated(token) {
-    return AUTH.invalidatedTokens.has(token);
+  async isTokenInvalidated(token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return true;
+      const payload = JSON.parse(b64urlDecodeToStr(parts[1]));
+      if (!payload.jti) return true;
+      const now = Math.floor(Date.now() / 1000);
+      const row = await DB.get('SELECT jti FROM revoked_tokens WHERE jti = ?', [payload.jti]);
+      if (row) return true;
+      try {
+        await DB.run('DELETE FROM revoked_tokens WHERE expires_at < ?', [now]);
+      } catch {}
+      return false;
+    } catch {
+      return true;
+    }
   },
 
-  invalidateToken(token) {
-    AUTH.invalidatedTokens.add(token);
+  async invalidateToken(token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return;
+      const payload = JSON.parse(b64urlDecodeToStr(parts[1]));
+      if (!payload.jti) return;
+      const expiresAt = typeof payload.exp === 'number' ? payload.exp : Math.floor(Date.now() / 1000);
+      try {
+        await DB.run('INSERT OR IGNORE INTO revoked_tokens (jti, expires_at) VALUES (?, ?)', [payload.jti, expiresAt]);
+      } catch (e) {
+        console.error('invalidateToken:', e);
+      }
+    } catch {}
   },
 
   setEnv(env) {

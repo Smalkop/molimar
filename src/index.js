@@ -20,10 +20,10 @@ import { handleAdminDirectSales, handleAdminDirectSalesApi } from './routes/admi
 import { handleAdminGallery, handleAdminGalleryApi } from './routes/admin/gallery.js';
 
 import { htmlResponse, jsonResponse, redirectResponse, optionsResponse, securityHeaders } from './utils/html.js';
-import { requireAdmin } from './middleware/auth.js';
+import { requireAdmin, checkSameOrigin } from './middleware/auth.js';
 
 const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'editor' CHECK(role IN ('admin', 'editor')), active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'editor' CHECK(role IN ('admin', 'editor')), active INTEGER NOT NULL DEFAULT 1, force_password_change INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE TABLE IF NOT EXISTS product_types (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, slug TEXT NOT NULL UNIQUE, description TEXT, icon TEXT, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, product_type_id INTEGER NOT NULL, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (product_type_id) REFERENCES product_types(id) ON DELETE CASCADE);
@@ -44,6 +44,10 @@ CREATE INDEX IF NOT EXISTS idx_settings_key ON site_settings(setting_key);
 CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, subject TEXT, message TEXT NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_messages_read ON contact_messages(is_read);
 CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS login_attempts (ip TEXT NOT NULL, email TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, first_attempt INTEGER NOT NULL, PRIMARY KEY (ip, email));
+CREATE TABLE IF NOT EXISTS contact_attempts (ip TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, first_attempt INTEGER NOT NULL, PRIMARY KEY (ip));
+CREATE TABLE IF NOT EXISTS revoked_tokens (jti TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS idx_revoked_expires ON revoked_tokens(expires_at);
 `;
 
 const SEED_SQL = `
@@ -183,20 +187,23 @@ async function ensureDatabase(env) {
     }
   }
 
-  // Admin user: always verify on every startup (creates if missing, upgrades hash if old format)
+  // Add force_password_change column to existing users table (safe to re-run)
+  try { await env.DB.prepare("ALTER TABLE users ADD COLUMN force_password_change INTEGER NOT NULL DEFAULT 0").all(); } catch {}
+
+  // Admin user: always verify on every startup (creates if missing).
+  // Initial password comes from env.ADMIN_INITIAL_PASSWORD (set via `wrangler secret put`),
+  // or fallback to 'admin123' with force_password_change=1 so it must be changed on first login.
   try {
     const existing = await env.DB.prepare('SELECT id, password FROM users WHERE email = ?').bind('admin@molipar.com').first();
     if (!existing) {
-      const pwdHash = await AUTH.hashPassword('admin123');
-      await env.DB.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', pwdHash, 'admin').all();
-      try {
-        await env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'false', 'security')").all();
-      } catch {}
-    } else {
-      const stored = existing.password;
-      if (stored && stored.indexOf(':') === -1 && stored.length === 64) {
-        const pwdHash = await AUTH.hashPassword('admin123');
-        await env.DB.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(pwdHash, existing.id).all();
+      const initialPwd = env.ADMIN_INITIAL_PASSWORD || 'admin123';
+      const forceChange = env.ADMIN_INITIAL_PASSWORD ? 0 : 1;
+      const pwdHash = await AUTH.hashPassword(initialPwd);
+      await env.DB.prepare('INSERT INTO users (name, email, password, role, force_password_change) VALUES (?, ?, ?, ?, ?)').bind('Administrador', 'admin@molipar.com', pwdHash, 'admin', forceChange).all();
+      if (forceChange) {
+        try {
+          await env.DB.prepare("INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'false', 'security')").all();
+        } catch {}
       }
     }
   } catch (e) { console.error('Error verifying admin user:', e); }
@@ -230,6 +237,12 @@ async function ensureDatabase(env) {
   // Create sales_regions table for existing DBs
   try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS sales_regions (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, phone TEXT NOT NULL, localities TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating sales_regions:', e); }
   try { await env.DB.prepare("ALTER TABLE sales_regions ADD COLUMN updated_at TEXT").all(); } catch {}
+
+  // Security tables: login rate-limit, contact rate-limit, revoked JWTs (jti)
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS login_attempts (ip TEXT NOT NULL, email TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, first_attempt INTEGER NOT NULL, PRIMARY KEY (ip, email))").all(); } catch (e) { console.error('Error creating login_attempts:', e); }
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS contact_attempts (ip TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, first_attempt INTEGER NOT NULL, PRIMARY KEY (ip))").all(); } catch (e) { console.error('Error creating contact_attempts:', e); }
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS revoked_tokens (jti TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))").all(); } catch (e) { console.error('Error creating revoked_tokens:', e); }
+  try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_revoked_expires ON revoked_tokens(expires_at)").all(); } catch {}
 
   // Seed sales_regions if empty
   try {
@@ -299,6 +312,10 @@ export default {
 
     STORAGE.setR2(env.R2);
     DB.setEnv(env);
+
+    // Activar enforcement de foreign keys en D1 (SQLite viene desactivado por defecto).
+    try { await env.DB.prepare('PRAGMA foreign_keys=ON').run(); } catch {}
+
     await ensureDatabase(env);
 
     // Static files from R2
@@ -357,7 +374,7 @@ export default {
     // ===== ADMIN ROUTES =====
     if (pathname === '/admin/login' && method === 'GET') return handleLoginPage(env);
     if (pathname === '/admin/api/login' && method === 'POST') return handleLoginApi(request, env);
-    if (pathname === '/admin/logout') return handleLogout(request);
+    if (pathname === '/admin/logout' && method === 'POST') return handleLogout(request);
 
     // Protected admin routes
     const auth = await requireAdmin(request, env);
@@ -368,13 +385,20 @@ export default {
       return redirectResponse('/admin/login');
     }
 
+    // CSRF: validar Origin en escrituras a /admin/api/* y /admin/logout
+    if (pathname.startsWith('/admin/api/') || pathname === '/admin/logout') {
+      if (!checkSameOrigin(request, env)) {
+        return jsonResponse({ error: 'Origen no permitido' }, 403, env);
+      }
+    }
+
     if (pathname === '/admin' && method === 'GET') return handleDashboard(env, auth.user);
 
     if (pathname === '/admin/productos' && method === 'GET') return handleAdminProducts(env, auth.user);
 
     if (pathname.startsWith('/admin/api/productos')) {
       const id = pathname.replace('/admin/api/productos', '').replace(/^\//, '') || null;
-      return handleAdminProductsApi(request, env, id);
+      return handleAdminProductsApi(request, env, id, auth.user);
     }
 
     if (pathname === '/admin/usuarios' && method === 'GET') return handleAdminUsers(env, auth.user);
@@ -391,17 +415,17 @@ export default {
 
     if (pathname.startsWith('/admin/api/mensajes/') && pathname.endsWith('/read') && method === 'POST') {
       const id = pathname.replace('/admin/api/mensajes/', '').replace('/read', '');
-      return handleAdminMessagesRead(env, id);
+      return handleAdminMessagesRead(env, id, auth.user);
     }
 
     if (pathname.startsWith('/admin/api/mensajes/') && pathname.endsWith('/delete') && method === 'POST') {
       const id = pathname.replace('/admin/api/mensajes/', '').replace('/delete', '');
-      return handleAdminMessagesDelete(env, id);
+      return handleAdminMessagesDelete(env, id, auth.user);
     }
 
     if (pathname.startsWith('/admin/api/mensajes') && method === 'GET') {
       const id = pathname.replace('/admin/api/mensajes', '').replace(/^\//, '') || null;
-      return handleAdminMessagesApi(env, id);
+      return handleAdminMessagesApi(env, id, auth.user);
     }
 
     if (pathname === '/admin/venta-directa' && method === 'GET') return handleAdminDirectSales(env, auth.user);
@@ -413,7 +437,7 @@ export default {
 
     if (pathname === '/admin/galeria' && method === 'GET') return handleAdminGallery(env, auth.user);
     if (pathname.startsWith('/admin/api/galeria')) {
-      return handleAdminGalleryApi(request, env);
+      return handleAdminGalleryApi(request, env, auth.user);
     }
 
     // ===== 404 =====

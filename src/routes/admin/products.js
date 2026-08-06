@@ -6,6 +6,11 @@ import { galleryPickerHTML } from './gallery.js';
 
 export async function handleAdminProducts(env, user) {
   DB.setEnv(env);
+
+  if (!user || user.role !== 'admin') {
+    return htmlResponse('<div class="p-6 text-center"><h1 class="text-2xl font-bold">Acceso denegado</h1><p class="text-gray-500 mt-2">Se requiere rol de administrador.</p></div>', 403);
+  }
+
   const harinas = await DB.query(`
     SELECT p.*, pt.name as type_name
     FROM products p
@@ -577,8 +582,12 @@ function parsePresentations(raw, productId) {
   });
 }
 
-export async function handleAdminProductsApi(request, env, id) {
+export async function handleAdminProductsApi(request, env, id, user) {
   DB.setEnv(env);
+
+  if (!user || user.role !== 'admin') {
+    return jsonResponse({ error: 'Solo administradores pueden gestionar productos' }, 403);
+  }
 
   if (request.method === 'PUT' && id === 'reorder') {
     try {

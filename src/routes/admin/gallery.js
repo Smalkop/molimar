@@ -7,6 +7,11 @@ import DB from '../../services/database.js';
 // ===== Página /admin/galeria =====
 export async function handleAdminGallery(env, user) {
   STORAGE.setR2(env.R2);
+
+  if (!user || user.role !== 'admin') {
+    return htmlResponse('<div class="p-6 text-center"><h1 class="text-2xl font-bold">Acceso denegado</h1><p class="text-gray-500 mt-2">Se requiere rol de administrador.</p></div>', 403);
+  }
+
   const html = adminLayout({ title: 'Galería', active: '/admin/galeria', header: 'toggle', user, content: `
     <div class="space-y-6">
       <div class="flex items-center justify-between flex-wrap gap-4">
@@ -171,8 +176,12 @@ export async function handleAdminGallery(env, user) {
 // GET    -> { images: [{key, size, uploaded, contentType}] }
 // POST   (multipart, campo 'images') -> { uploaded: n, skipped: m }
 // DELETE (?key=...)  -> { success: true }
-export async function handleAdminGalleryApi(request, env, id) {
+export async function handleAdminGalleryApi(request, env, user) {
   STORAGE.setR2(env.R2);
+
+  if (!user || user.role !== 'admin') {
+    return jsonResponse({ error: 'Solo administradores pueden gestionar la galería' }, 403);
+  }
 
   if (request.method === 'GET') {
     try {

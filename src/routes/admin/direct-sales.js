@@ -5,6 +5,10 @@ import DB from '../../services/database.js';
 export async function handleAdminDirectSales(env, user) {
   DB.setEnv(env);
 
+  if (!user || user.role !== 'admin') {
+    return htmlResponse('<div class="p-6 text-center"><h1 class="text-2xl font-bold">Acceso denegado</h1><p class="text-gray-500 mt-2">Se requiere rol de administrador.</p></div>', 403);
+  }
+
   const regions = await DB.query('SELECT * FROM sales_regions ORDER BY sort_order');
 
   const content = `

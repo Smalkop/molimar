@@ -4,6 +4,11 @@ import DB from '../../services/database.js';
 
 export async function handleAdminMessages(env, user) {
   DB.setEnv(env);
+
+  if (!user || user.role !== 'admin') {
+    return htmlResponse('<div class="p-6 text-center"><h1 class="text-2xl font-bold">Acceso denegado</h1><p class="text-gray-500 mt-2">Se requiere rol de administrador.</p></div>', 403);
+  }
+
   const messages = await DB.query('SELECT * FROM contact_messages ORDER BY created_at DESC');
 
   const content = `
@@ -112,8 +117,12 @@ export async function handleAdminMessages(env, user) {
   return htmlResponse(adminLayout({ title: 'Mensajes', active: '/admin/mensajes', content, user }));
 }
 
-export async function handleAdminMessagesApi(env, id) {
+export async function handleAdminMessagesApi(env, id, user) {
   DB.setEnv(env);
+
+  if (!user || user.role !== 'admin') {
+    return jsonResponse({ error: 'Solo administradores pueden gestionar mensajes' }, 403);
+  }
 
   if (id) {
     const message = await DB.get('SELECT * FROM contact_messages WHERE id = ?', [parseInt(id)]);
@@ -125,14 +134,38 @@ export async function handleAdminMessagesApi(env, id) {
   return jsonResponse(messages);
 }
 
-export async function handleAdminMessagesRead(env, id) {
+export async function handleAdminMessagesRead(env, id, user) {
   DB.setEnv(env);
-  await DB.run('UPDATE contact_messages SET is_read = 1 WHERE id = ?', [parseInt(id)]);
-  return jsonResponse({ success: true });
+
+  if (!user || user.role !== 'admin') {
+    return jsonResponse({ error: 'Solo administradores pueden gestionar mensajes' }, 403);
+  }
+
+  try {
+    const numId = parseInt(id);
+    if (!Number.isFinite(numId)) return jsonResponse({ error: 'ID inválido' }, 400);
+    await DB.run('UPDATE contact_messages SET is_read = 1 WHERE id = ?', [numId]);
+    return jsonResponse({ success: true });
+  } catch (e) {
+    console.error('messages read:', e);
+    return jsonResponse({ error: 'Error al marcar mensaje' }, 500);
+  }
 }
 
-export async function handleAdminMessagesDelete(env, id) {
+export async function handleAdminMessagesDelete(env, id, user) {
   DB.setEnv(env);
-  await DB.run('DELETE FROM contact_messages WHERE id = ?', [parseInt(id)]);
-  return jsonResponse({ success: true });
+
+  if (!user || user.role !== 'admin') {
+    return jsonResponse({ error: 'Solo administradores pueden gestionar mensajes' }, 403);
+  }
+
+  try {
+    const numId = parseInt(id);
+    if (!Number.isFinite(numId)) return jsonResponse({ error: 'ID inválido' }, 400);
+    await DB.run('DELETE FROM contact_messages WHERE id = ?', [numId]);
+    return jsonResponse({ success: true });
+  } catch (e) {
+    console.error('messages delete:', e);
+    return jsonResponse({ error: 'Error al eliminar mensaje' }, 500);
+  }
 }

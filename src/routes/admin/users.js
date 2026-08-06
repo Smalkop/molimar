@@ -167,15 +167,21 @@ export async function handleAdminUsersApi(request, env, id, user) {
   }
 
   if (request.method === 'PUT' && id) {
+    const numId = parseInt(id);
+    if (!Number.isFinite(numId)) return jsonResponse({ error: 'ID inválido' }, 400);
     const data = await request.json();
     const updates = {};
     if (data.name) updates.name = sanitizeString(data.name);
     if (data.email) updates.email = sanitizeString(data.email);
     if (data.password) updates.password = await AUTH.hashPassword(data.password);
     if (data.role === 'admin' || data.role === 'editor') updates.role = data.role;
-    await DB.update('users', updates, 'id', parseInt(id));
 
-    if (user && user.id === parseInt(id) && data.password) {
+    if (data.password) {
+      updates.force_password_change = 0;
+    }
+
+    if (user && user.id === numId && data.password) {
+      updates.force_password_change = 0;
       try {
         await DB.run("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES ('default_password_changed', 'true', 'security') ON CONFLICT(setting_key) DO UPDATE SET setting_value = 'true', updated_at = datetime('now')");
       } catch {
@@ -183,11 +189,23 @@ export async function handleAdminUsersApi(request, env, id, user) {
       }
     }
 
+    await DB.update('users', updates, 'id', numId, { withTimestamp: true });
+
     return jsonResponse({ success: true });
   }
 
   if (request.method === 'DELETE' && id) {
-    await DB.run('DELETE FROM users WHERE id = ?', [parseInt(id)]);
+    const numId = parseInt(id);
+    if (!Number.isFinite(numId)) return jsonResponse({ error: 'ID inválido' }, 400);
+    if (user && user.id === numId) return jsonResponse({ error: 'No podés eliminar tu propia cuenta' }, 400);
+    if (user && user.role === 'admin') {
+      const adminCount = await DB.get("SELECT COUNT(*) as c FROM users WHERE role = 'admin' AND active = 1");
+      const target = await DB.get('SELECT role FROM users WHERE id = ?', [numId]);
+      if (target && target.role === 'admin' && adminCount.c <= 1) {
+        return jsonResponse({ error: 'No se puede eliminar al último administrador' }, 400);
+      }
+    }
+    await DB.run('DELETE FROM users WHERE id = ?', [numId]);
     return jsonResponse({ success: true });
   }
 

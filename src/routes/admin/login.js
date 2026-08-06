@@ -3,54 +3,85 @@ import AUTH from '../../services/auth.js';
 import DB from '../../services/database.js';
 
 const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
+const MAX_IP_ATTEMPTS = 20;
+const LOCKOUT_MS = 15 * 60 * 1000;
 
-function getLoginKey(ip, email) {
-  return `login:${ip}:${email}`;
+function getClientIP(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
 }
 
 async function checkRateLimit(ip, email) {
   try {
+    const now = Date.now();
     const row = await DB.get(
-      "SELECT setting_value FROM site_settings WHERE setting_key = ?",
-      [getLoginKey(ip, email)]
+      'SELECT attempts, first_attempt FROM login_attempts WHERE ip = ? AND email = ?',
+      [ip, email]
     );
     if (!row) return true;
-    const data = JSON.parse(row.setting_value);
-    const elapsed = (Date.now() - data.first_attempt) / 1000 / 60;
-    if (elapsed < LOCKOUT_MINUTES && data.attempts >= MAX_LOGIN_ATTEMPTS) {
+    const elapsed = now - row.first_attempt;
+    if (elapsed < LOCKOUT_MS && row.attempts >= MAX_LOGIN_ATTEMPTS) {
       return false;
     }
-    if (elapsed >= LOCKOUT_MINUTES) {
-      await DB.run("DELETE FROM site_settings WHERE setting_key = ?", [getLoginKey(ip, email)]);
+    if (elapsed >= LOCKOUT_MS) {
+      await DB.run('DELETE FROM login_attempts WHERE ip = ? AND email = ?', [ip, email]);
       return true;
     }
     return true;
-  } catch {
+  } catch (e) {
+    console.error('checkRateLimit:', e);
+    return true;
+  }
+}
+
+async function checkIPRateLimit(ip) {
+  try {
+    const now = Date.now();
+    const rows = await DB.query(
+      'SELECT attempts, first_attempt FROM login_attempts WHERE ip = ?',
+      [ip]
+    );
+    const totalAttempts = rows.reduce((a, r) => a + (r.attempts || 0), 0);
+    const minFirst = rows.length ? Math.min(...rows.map(r => r.first_attempt)) : now;
+    if (rows.length && (now - minFirst) >= LOCKOUT_MS) {
+      await DB.run('DELETE FROM login_attempts WHERE ip = ?', [ip]);
+      return true;
+    }
+    return totalAttempts < MAX_IP_ATTEMPTS;
+  } catch (e) {
+    console.error('checkIPRateLimit:', e);
     return true;
   }
 }
 
 async function recordAttempt(ip, email) {
   try {
-    const key = getLoginKey(ip, email);
-    const row = await DB.get("SELECT setting_value FROM site_settings WHERE setting_key = ?", [key]);
+    const now = Date.now();
+    const row = await DB.get(
+      'SELECT attempts, first_attempt FROM login_attempts WHERE ip = ? AND email = ?',
+      [ip, email]
+    );
     if (row) {
-      const data = JSON.parse(row.setting_value);
-      data.attempts += 1;
-      await DB.run("UPDATE site_settings SET setting_value = ?, updated_at = datetime('now') WHERE setting_key = ?", [JSON.stringify(data), key]);
+      await DB.run(
+        'UPDATE login_attempts SET attempts = attempts + 1 WHERE ip = ? AND email = ?',
+        [ip, email]
+      );
     } else {
-      const data = { attempts: 1, first_attempt: Date.now() };
-      const stmt = DB.env.DB.prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES (?, ?, 'security')");
-      await stmt.bind(key, JSON.stringify(data)).run();
+      await DB.run(
+        'INSERT INTO login_attempts (ip, email, attempts, first_attempt) VALUES (?, ?, 1, ?)',
+        [ip, email, now]
+      );
     }
-  } catch {}
+  } catch (e) {
+    console.error('recordAttempt:', e);
+  }
 }
 
 async function clearAttempts(ip, email) {
   try {
-    await DB.run("DELETE FROM site_settings WHERE setting_key = ?", [getLoginKey(ip, email)]);
-  } catch {}
+    await DB.run('DELETE FROM login_attempts WHERE ip = ? AND email = ?', [ip, email]);
+  } catch (e) {
+    console.error('clearAttempts:', e);
+  }
 }
 
 export async function handleLoginPage(env) {
@@ -148,12 +179,16 @@ export async function handleLoginApi(request, env) {
   DB.setEnv(env);
   AUTH.setEnv(env);
 
-  const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+  const ip = getClientIP(request);
 
   try {
     const allowed = await checkRateLimit(ip, data.email);
     if (!allowed) {
-      return jsonResponse({ error: `Demasiados intentos. Esperá ${LOCKOUT_MINUTES} minutos.` }, 429);
+      return jsonResponse({ error: `Demasiados intentos para este usuario. Esperá 15 minutos.` }, 429);
+    }
+    const ipAllowed = await checkIPRateLimit(ip);
+    if (!ipAllowed) {
+      return jsonResponse({ error: 'Demasiados intentos desde esta IP. Esperá 15 minutos.' }, 429);
     }
 
     const result = await AUTH.authenticate(data.email, data.password);
@@ -166,7 +201,7 @@ export async function handleLoginApi(request, env) {
     await clearAttempts(ip, data.email);
 
     const headers = new Headers({
-      'Set-Cookie': `token=${result.token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${env.APP_ENV === 'production' ? '; Secure' : ''}`,
+      'Set-Cookie': `__Host-token=${result.token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=86400`,
       'Content-Type': 'application/json',
     });
 
@@ -186,13 +221,14 @@ export async function handleLoginApi(request, env) {
 
 export async function handleLogout(request) {
   const cookie = request.headers.get('Cookie') || '';
-  const tokenMatch = cookie.match(/token=([^;]+)/);
-  if (tokenMatch) {
-    AUTH.invalidateToken(tokenMatch[1]);
+  const tokenMatch = cookie.match(/__Host-token=([^;]+)/);
+  const token = tokenMatch ? tokenMatch[1] : null;
+  if (token) {
+    await AUTH.invalidateToken(token);
   }
 
   const headers = new Headers({
-    'Set-Cookie': 'token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict',
+    'Set-Cookie': '__Host-token=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0',
     'Location': '/admin/login',
   });
 
