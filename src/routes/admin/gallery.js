@@ -254,9 +254,13 @@ export async function handleAdminGalleryApi(request, env, user) {
       const url = new URL(request.url);
       const key = url.searchParams.get('key');
       if (!key) return jsonResponse({ error: 'Falta el parámetro key' }, 400);
-      // Sólo permitimos borrar de gallery/ o molipa/ (no de static/)
-      if (key.startsWith('static/')) {
-        return jsonResponse({ error: 'No se pueden borrar archivos estáticos desde aquí' }, 400);
+      // Whitelist positiva: solo se pueden borrar claves bajo gallery/ o molipa/
+      if (!key.startsWith('gallery/') && !key.startsWith('molipa/')) {
+        return jsonResponse({ error: 'Solo se pueden borrar imágenes de la galería o de productos' }, 400);
+      }
+      // Rechazar path traversal
+      if (key.includes('..')) {
+        return jsonResponse({ error: 'Clave inválida' }, 400);
       }
       // No eliminar imágenes que todavía referencia algún producto
       DB.setEnv(env);

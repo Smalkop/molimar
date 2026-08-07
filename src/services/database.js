@@ -1,10 +1,23 @@
 import { validateTableName } from './auth.js';
 
 const VALID_COLUMN_RE = /^[a-z_][a-z0-9_]*$/;
+const tableColumnsCache = new Map();
 
 function validateColumnName(name) {
   if (!VALID_COLUMN_RE.test(name)) {
     throw new Error(`Nombre de columna inválido: ${name}`);
+  }
+}
+
+async function hasColumn(table, column) {
+  if (tableColumnsCache.has(table)) return tableColumnsCache.get(table).has(column);
+  try {
+    const result = await DB.env.DB.prepare(`PRAGMA table_info(${table})`).all();
+    const cols = new Set((result.results || []).map(r => r.name));
+    tableColumnsCache.set(table, cols);
+    return cols.has(column);
+  } catch {
+    return false;
   }
 }
 
@@ -43,9 +56,11 @@ const DB = {
     keys.forEach(validateColumnName);
     const values = Object.values(data);
     const setParts = keys.map(k => `${k} = ?`);
-    // Añadimos updated_at solo si la tabla lo soporta (default: true).
     if (opts.withTimestamp !== false) {
-      setParts.push(`updated_at = datetime('now')`);
+      const supportsUpdated = await hasColumn(table, 'updated_at');
+      if (supportsUpdated) {
+        setParts.push(`updated_at = datetime('now')`);
+      }
     }
     const setClause = setParts.join(', ');
     const sql = `UPDATE ${table} SET ${setClause} WHERE ${whereKey} = ?`;

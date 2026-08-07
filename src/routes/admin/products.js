@@ -2,6 +2,7 @@ import { htmlResponse, jsonResponse, slugify, sanitizeString, escapeHtml, imgUrl
 import { adminLayout } from '../../components/adminLayout.js';
 import DB from '../../services/database.js';
 import IMAGE from '../../services/image.js';
+import STORAGE from '../../services/storage.js';
 import { galleryPickerHTML } from './gallery.js';
 
 export async function handleAdminProducts(env, user) {
@@ -565,25 +566,34 @@ export async function handleAdminProducts(env, user) {
 function parsePresentations(raw, productId) {
   if (!raw) return [];
   const lines = String(raw).split('\n').map(s => s.trim()).filter(Boolean);
-  return lines.map((line, i) => {
+  const seen = new Set();
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const parts = line.split(',').map(s => s.trim());
     let price = null;
     if (parts[2]) {
       const n = parseFloat(parts[2]);
       price = Number.isFinite(n) ? n : null;
     }
-    return {
+    const name = parts[0] || `Presentación ${i + 1}`;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
       product_id: productId,
-      name: parts[0] || `Presentación ${i + 1}`,
+      name,
       weight: parts[1] || null,
       price,
       sort_order: i,
-    };
-  });
+    });
+  }
+  return result;
 }
 
 export async function handleAdminProductsApi(request, env, id, user) {
   DB.setEnv(env);
+  STORAGE.setR2(env.R2);
 
   if (!user || user.role !== 'admin') {
     return jsonResponse({ error: 'Solo administradores pueden gestionar productos' }, 403);
@@ -594,7 +604,7 @@ export async function handleAdminProductsApi(request, env, id, user) {
       const { ordered_ids } = await request.json();
       if (!Array.isArray(ordered_ids)) return jsonResponse({ error: 'ordered_ids requerido' }, 400);
       for (let i = 0; i < ordered_ids.length; i++) {
-        await DB.update('products', { sort_order: i }, 'id', ordered_ids[i]);
+        await DB.update('products', { sort_order: i }, 'id', ordered_ids[i], { withTimestamp: false });
       }
       return jsonResponse({ success: true });
     } catch (e) {
@@ -625,11 +635,15 @@ export async function handleAdminProductsApi(request, env, id, user) {
         short_description: sanitizeString(formData.get('short_description') || ''),
         full_description: sanitizeString(formData.get('full_description') || ''),
         nutritional_info: sanitizeString(formData.get('nutritional_info') || ''),
-        status: formData.get('status') || 'active',
-        sort_order: parseInt(formData.get('sort_order')) || 0,
-        crop_x: parseInt(formData.get('crop_x')) || 50,
-        crop_y: parseInt(formData.get('crop_y')) || 50,
+        status: formData.get('status') === 'inactive' ? 'inactive' : 'active',
+        sort_order: Number.isFinite(parseInt(formData.get('sort_order'))) ? parseInt(formData.get('sort_order')) : 0,
+        crop_x: Number.isFinite(parseInt(formData.get('crop_x'))) ? parseInt(formData.get('crop_x')) : 50,
+        crop_y: Number.isFinite(parseInt(formData.get('crop_y'))) ? parseInt(formData.get('crop_y')) : 50,
       };
+
+      if (!Number.isFinite(productData.product_type_id)) {
+        return jsonResponse({ error: 'product_type_id inválido' }, 400);
+      }
 
       let slug = formData.get('slug') || slugify(name);
       let uniqueSlug = slug;
@@ -645,76 +659,92 @@ export async function handleAdminProductsApi(request, env, id, user) {
       const result = await DB.insert('products', productData);
       const productId = result.meta?.last_row_id || result.id;
 
-      const presentationsRaw = formData.get('presentations');
-      if (presentationsRaw) {
-        const presentations = parsePresentations(presentationsRaw, productId);
-        for (const p of presentations) {
-          await DB.insert('product_presentations', p);
+      // Track de claves subidas a R2 para compensar si algo falla luego.
+      const uploadedKeys = [];
+
+      try {
+        const presentationsRaw = formData.get('presentations');
+        if (presentationsRaw) {
+          const presentations = parsePresentations(presentationsRaw, productId);
+          for (const p of presentations) {
+            await DB.insert('product_presentations', p);
+          }
         }
-      }
 
-      // === Imagen principal ===
-      // Prioridad: archivo subido > imagen elegida de la galería.
-      const mainImage = formData.get('main_image');
-      const mainGalleryKey = formData.get('main_image_gallery');
-      if (mainImage && mainImage.size > 0) {
-        const paths = await IMAGE.process(mainImage, productId);
-        await DB.update('products', { main_image: paths.medium }, 'id', productId);
-        await DB.insert('product_images', {
-          product_id: productId,
-          image_type: 'main',
-          thumbnail_path: paths.thumbnail,
-          medium_path: paths.medium,
-          original_path: paths.original,
-          sort_order: 0,
-        });
-      } else if (mainGalleryKey && typeof mainGalleryKey === 'string' && mainGalleryKey.length > 0) {
-        await DB.update('products', { main_image: mainGalleryKey }, 'id', productId);
-        await DB.insert('product_images', {
-          product_id: productId,
-          image_type: 'main',
-          thumbnail_path: mainGalleryKey,
-          medium_path: mainGalleryKey,
-          original_path: mainGalleryKey,
-          sort_order: 0,
-        });
-      }
-
-      // === Galería del producto ===
-      // Combination: archivos subidos (procesados) + keys seleccionadas de la galería.
-      let gallerySort = 1;
-      const galleryFiles = formData.getAll('gallery');
-      for (const f of galleryFiles) {
-        if (f.size > 0) {
-          const paths = await IMAGE.process(f, productId);
+        // === Imagen principal ===
+        // Prioridad: archivo subido > imagen elegida de la galería.
+        const mainImage = formData.get('main_image');
+        const mainGalleryKey = formData.get('main_image_gallery');
+        if (mainImage && mainImage.size > 0) {
+          const paths = await IMAGE.process(mainImage, productId);
+          uploadedKeys.push(paths.thumbnail, paths.medium, paths.original);
+          await DB.update('products', { main_image: paths.medium }, 'id', productId);
           await DB.insert('product_images', {
             product_id: productId,
-            image_type: 'gallery',
+            image_type: 'main',
             thumbnail_path: paths.thumbnail,
             medium_path: paths.medium,
             original_path: paths.original,
-            sort_order: gallerySort++,
+            sort_order: 0,
           });
-        }
-      }
-      const gallerySelectedRaw = formData.get('gallery_selected');
-      if (gallerySelectedRaw && typeof gallerySelectedRaw === 'string') {
-        const keys = gallerySelectedRaw.split(',').map(s => s.trim()).filter(Boolean);
-        for (const k of keys) {
+        } else if (mainGalleryKey && typeof mainGalleryKey === 'string' && mainGalleryKey.length > 0) {
+          await DB.update('products', { main_image: mainGalleryKey }, 'id', productId);
           await DB.insert('product_images', {
             product_id: productId,
-            image_type: 'gallery',
-            thumbnail_path: k,
-            medium_path: k,
-            original_path: k,
-            sort_order: gallerySort++,
+            image_type: 'main',
+            thumbnail_path: mainGalleryKey,
+            medium_path: mainGalleryKey,
+            original_path: mainGalleryKey,
+            sort_order: 0,
           });
         }
-      }
 
-      return jsonResponse({ success: true, id: productId });
+        // === Galería del producto ===
+        // Combination: archivos subidos (procesados) + keys seleccionadas de la galería.
+        let gallerySort = 1;
+        const galleryFiles = formData.getAll('gallery');
+        for (const f of galleryFiles) {
+          if (f.size > 0) {
+            const paths = await IMAGE.process(f, productId);
+            uploadedKeys.push(paths.thumbnail, paths.medium, paths.original);
+            await DB.insert('product_images', {
+              product_id: productId,
+              image_type: 'gallery',
+              thumbnail_path: paths.thumbnail,
+              medium_path: paths.medium,
+              original_path: paths.original,
+              sort_order: gallerySort++,
+            });
+          }
+        }
+        const gallerySelectedRaw = formData.get('gallery_selected');
+        if (gallerySelectedRaw && typeof gallerySelectedRaw === 'string') {
+          const keys = gallerySelectedRaw.split(',').map(s => s.trim()).filter(Boolean);
+          for (const k of keys) {
+            await DB.insert('product_images', {
+              product_id: productId,
+              image_type: 'gallery',
+              thumbnail_path: k,
+              medium_path: k,
+              original_path: k,
+              sort_order: gallerySort++,
+            });
+          }
+        }
+
+        return jsonResponse({ success: true, id: productId });
+      } catch (e) {
+        console.error('create product post-insert:', e);
+        // Compensación: borrar producto + objetos R2 ya subidos
+        try { await DB.delete('products', 'id', productId); } catch {}
+        for (const k of uploadedKeys) {
+          try { await STORAGE.delete(k); } catch {}
+        }
+        return jsonResponse({ error: 'Error al crear el producto' }, 500);
+      }
     } catch (e) {
-      return jsonResponse({ error: e.message || 'Error al crear producto' }, 500);
+      console.error('create product:', e);
+      return jsonResponse({ error: 'Error al crear el producto' }, 500);
     }
   }
 
@@ -731,11 +761,15 @@ export async function handleAdminProductsApi(request, env, id, user) {
         short_description: sanitizeString(formData.get('short_description') || ''),
         full_description: sanitizeString(formData.get('full_description') || ''),
         nutritional_info: sanitizeString(formData.get('nutritional_info') || ''),
-        status: formData.get('status') || 'active',
-        sort_order: parseInt(formData.get('sort_order')) || 0,
-        crop_x: parseInt(formData.get('crop_x')) || 50,
-        crop_y: parseInt(formData.get('crop_y')) || 50,
+        status: formData.get('status') === 'inactive' ? 'inactive' : 'active',
+        sort_order: Number.isFinite(parseInt(formData.get('sort_order'))) ? parseInt(formData.get('sort_order')) : 0,
+        crop_x: Number.isFinite(parseInt(formData.get('crop_x'))) ? parseInt(formData.get('crop_x')) : 50,
+        crop_y: Number.isFinite(parseInt(formData.get('crop_y'))) ? parseInt(formData.get('crop_y')) : 50,
       };
+
+      if (!Number.isFinite(productData.product_type_id)) {
+        return jsonResponse({ error: 'product_type_id inválido' }, 400);
+      }
 
       let slug = formData.get('slug') || slugify(name);
       let uniqueSlug = slug;
@@ -750,148 +784,174 @@ export async function handleAdminProductsApi(request, env, id, user) {
 
       await DB.update('products', productData, 'id', parseInt(id));
 
-      await DB.delete('product_presentations', 'product_id', parseInt(id));
-      const presentationsRaw = formData.get('presentations');
-      if (presentationsRaw) {
-        const presentations = parsePresentations(presentationsRaw, parseInt(id));
-        for (const p of presentations) {
-          await DB.insert('product_presentations', p);
-        }
-      }
+      // Track de claves nuevas subidas a R2 en esta operación, para compensación
+      const uploadedKeys = [];
 
-      // === Imagen principal (PUT) ===
-      // Prioridad: archivo subido > imagen de galería seleccionada.
-      const mainImage = formData.get('main_image');
-      const mainGalleryKey = formData.get('main_image_gallery');
-      if (mainImage && mainImage.size > 0) {
-        const paths = await IMAGE.process(mainImage, parseInt(id));
-        await DB.update('products', { main_image: paths.medium }, 'id', parseInt(id));
-        // Remover la imagen principal anterior sin tocar la galería
-        const prevMain = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'main']);
-        if (prevMain.length > 0) {
-          // Solo borrar de R2 las generadas vía IMAGE.process (que arrancan con molipa/).
-          // Las elegidas de galería (gallery/) no se borran de R2 al seguir usándose ahí.
+      try {
+        await DB.delete('product_presentations', 'product_id', parseInt(id));
+        const presentationsRaw = formData.get('presentations');
+        if (presentationsRaw) {
+          const presentations = parsePresentations(presentationsRaw, parseInt(id));
+          for (const p of presentations) {
+            await DB.insert('product_presentations', p);
+          }
+        }
+
+        // === Imagen principal (PUT) ===
+        // Prioridad: archivo subido > imagen de galería seleccionada.
+        const mainImage = formData.get('main_image');
+        const mainGalleryKey = formData.get('main_image_gallery');
+        if (mainImage && mainImage.size > 0) {
+          const paths = await IMAGE.process(mainImage, parseInt(id));
+          uploadedKeys.push(paths.thumbnail, paths.medium, paths.original);
+          await DB.update('products', { main_image: paths.medium }, 'id', parseInt(id));
+          // Remover la imagen principal anterior sin tocar la galería
+          const prevMain = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'main']);
+          if (prevMain.length > 0) {
+            // Solo borrar de R2 las generadas vía IMAGE.process (que arrancan con molipa/).
+            // Las elegidas de galería (gallery/) no se borran de R2 al seguir usándose ahí.
+            const toDelete = prevMain.filter(i => (i.original_path || '').startsWith('molipa/'));
+            if (toDelete.length > 0) await IMAGE.delete(toDelete);
+            for (const i of prevMain) await DB.delete('product_images', 'id', i.id);
+          }
+          await DB.insert('product_images', {
+            product_id: parseInt(id),
+            image_type: 'main',
+            thumbnail_path: paths.thumbnail,
+            medium_path: paths.medium,
+            original_path: paths.original,
+            sort_order: 0,
+          });
+        } else if (mainGalleryKey && typeof mainGalleryKey === 'string' && mainGalleryKey.length > 0) {
+          await DB.update('products', { main_image: mainGalleryKey }, 'id', parseInt(id));
+          const prevMain = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'main']);
+          // Si la imagen principal anterior fue procesada (molipa/) y ya no se usa,
+          // se elimina de R2; las de galería (gallery/) son reutilizables.
           const toDelete = prevMain.filter(i => (i.original_path || '').startsWith('molipa/'));
           if (toDelete.length > 0) await IMAGE.delete(toDelete);
           for (const i of prevMain) await DB.delete('product_images', 'id', i.id);
+          await DB.insert('product_images', {
+            product_id: parseInt(id),
+            image_type: 'main',
+            thumbnail_path: mainGalleryKey,
+            medium_path: mainGalleryKey,
+            original_path: mainGalleryKey,
+            sort_order: 0,
+          });
         }
-        await DB.insert('product_images', {
-          product_id: parseInt(id),
-          image_type: 'main',
-          thumbnail_path: paths.thumbnail,
-          medium_path: paths.medium,
-          original_path: paths.original,
-          sort_order: 0,
-        });
-      } else if (mainGalleryKey && typeof mainGalleryKey === 'string' && mainGalleryKey.length > 0) {
-        await DB.update('products', { main_image: mainGalleryKey }, 'id', parseInt(id));
-        const prevMain = await DB.query('SELECT * FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'main']);
-        // Si la imagen principal anterior fue procesada (molipa/) y ya no se usa,
-        // se elimina de R2; las de galería (gallery/) son reutilizables.
-        const toDelete = prevMain.filter(i => (i.original_path || '').startsWith('molipa/'));
-        if (toDelete.length > 0) await IMAGE.delete(toDelete);
-        for (const i of prevMain) await DB.delete('product_images', 'id', i.id);
-        await DB.insert('product_images', {
-          product_id: parseInt(id),
-          image_type: 'main',
-          thumbnail_path: mainGalleryKey,
-          medium_path: mainGalleryKey,
-          original_path: mainGalleryKey,
-          sort_order: 0,
-        });
-      }
 
-      // === Galería del producto (PUT) ===
-      // Solo se reemplaza la galería si el usuario subió archivos nuevos O eligió
-      // imágenes de la galería. Si no, se conserva la existente (evita borrar al
-      // editar otros campos del producto).
-      const galleryFiles = formData.getAll('gallery');
-      const gallerySelectedRaw = formData.get('gallery_selected');
-      const gallerySelectedKeys = (gallerySelectedRaw && typeof gallerySelectedRaw === 'string'
-        ? gallerySelectedRaw.split(',').map(s => s.trim()).filter(Boolean)
-        : []);
+        // === Galería del producto (PUT) ===
+        // Solo se reemplaza la galería si el usuario subió archivos nuevos O eligió
+        // imágenes de la galería. Si no, se conserva la existente (evita borrar al
+        // editar otros campos del producto).
+        const galleryFiles = formData.getAll('gallery');
+        const gallerySelectedRaw = formData.get('gallery_selected');
+        const gallerySelectedKeys = (gallerySelectedRaw && typeof gallerySelectedRaw === 'string'
+          ? gallerySelectedRaw.split(',').map(s => s.trim()).filter(Boolean)
+          : []);
 
-      const hasNewFiles = galleryFiles.length > 0 && galleryFiles[0].size > 0;
-      const hasGallerySelection = gallerySelectedKeys.length > 0;
+        const hasNewFiles = galleryFiles.length > 0 && galleryFiles[0].size > 0;
+        const hasGallerySelection = gallerySelectedKeys.length > 0;
 
-      if (hasNewFiles || hasGallerySelection) {
-        const existingImages = await DB.query(
-          'SELECT * FROM product_images WHERE product_id = ? AND image_type = ?',
-          [parseInt(id), 'gallery'],
-        );
-        if (existingImages.length > 0) {
-          // Solo borrar de R2 las que fueron procesadas (molipa/). Las elegidas
-          // de la galería (gallery/) siguen siendo reutilizables.
-          const toDelete = existingImages.filter(i => (i.original_path || '').startsWith('molipa/'));
-          if (toDelete.length > 0) await IMAGE.delete(toDelete);
-          // Solo borramos las filas de galería; conservamos la 'main' para no
-          // perder la imagen principal ni generar fugas en R2 al final.
-          await DB.run('DELETE FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'gallery']);
-        }
-        let gallerySort = 1;
-        for (const f of galleryFiles) {
-          if (f.size > 0) {
-            const paths = await IMAGE.process(f, parseInt(id));
+        if (hasNewFiles || hasGallerySelection) {
+          const existingImages = await DB.query(
+            'SELECT * FROM product_images WHERE product_id = ? AND image_type = ?',
+            [parseInt(id), 'gallery'],
+          );
+          if (existingImages.length > 0) {
+            // Solo borrar de R2 las que fueron procesadas (molipa/). Las elegidas
+            // de la galería (gallery/) siguen siendo reutilizables.
+            const toDelete = existingImages.filter(i => (i.original_path || '').startsWith('molipa/'));
+            if (toDelete.length > 0) await IMAGE.delete(toDelete);
+            // Solo borramos las filas de galería; conservamos la 'main' para no
+            // perder la imagen principal ni generar fugas en R2 al final.
+            await DB.run('DELETE FROM product_images WHERE product_id = ? AND image_type = ?', [parseInt(id), 'gallery']);
+          }
+          let gallerySort = 1;
+          for (const f of galleryFiles) {
+            if (f.size > 0) {
+              const paths = await IMAGE.process(f, parseInt(id));
+              uploadedKeys.push(paths.thumbnail, paths.medium, paths.original);
+              await DB.insert('product_images', {
+                product_id: parseInt(id),
+                image_type: 'gallery',
+                thumbnail_path: paths.thumbnail,
+                medium_path: paths.medium,
+                original_path: paths.original,
+                sort_order: gallerySort++,
+              });
+            }
+          }
+          for (const k of gallerySelectedKeys) {
             await DB.insert('product_images', {
               product_id: parseInt(id),
               image_type: 'gallery',
-              thumbnail_path: paths.thumbnail,
-              medium_path: paths.medium,
-              original_path: paths.original,
+              thumbnail_path: k,
+              medium_path: k,
+              original_path: k,
               sort_order: gallerySort++,
             });
           }
         }
-        for (const k of gallerySelectedKeys) {
-          await DB.insert('product_images', {
-            product_id: parseInt(id),
-            image_type: 'gallery',
-            thumbnail_path: k,
-            medium_path: k,
-            original_path: k,
-            sort_order: gallerySort++,
-          });
-        }
-      }
 
-      // === Quitar imágenes existentes de la galería (sin reemplazo total) ===
-      // Solo si el usuario NO subió archivos nuevos ni eligió de la galería;
-      // si hubo reemplazo, las filas/galleries anteriores ya se eliminaron arriba.
-      const removeGalleryRaw = formData.get('remove_gallery_ids');
-      if (removeGalleryRaw && !hasNewFiles && !hasGallerySelection) {
-        const removeIds = removeGalleryRaw.split(',').map(s => s.trim()).filter(Boolean).map(Number);
-        for (const rid of removeIds) {
-          if (!rid) continue;
-          const imgs = await DB.query(
-            'SELECT * FROM product_images WHERE id = ? AND product_id = ?',
-            [rid, parseInt(id)],
-          );
-          if (imgs.length === 0) continue;
-          const img = imgs[0];
-          if ((img.original_path || '').startsWith('molipa/')) await IMAGE.delete([img]);
-          await DB.delete('product_images', 'id', rid);
+        // === Quitar imágenes existentes de la galería (sin reemplazo total) ===
+        // Solo si el usuario NO subió archivos nuevos ni eligió de la galería;
+        // si hubo reemplazo, las filas/galleries anteriores ya se eliminaron arriba.
+        const removeGalleryRaw = formData.get('remove_gallery_ids');
+        if (removeGalleryRaw && !hasNewFiles && !hasGallerySelection) {
+          const removeIds = removeGalleryRaw.split(',').map(s => s.trim()).filter(Boolean).map(Number);
+          for (const rid of removeIds) {
+            if (!rid) continue;
+            const imgs = await DB.query(
+              'SELECT * FROM product_images WHERE id = ? AND product_id = ?',
+              [rid, parseInt(id)],
+            );
+            if (imgs.length === 0) continue;
+            const img = imgs[0];
+            if ((img.original_path || '').startsWith('molipa/')) await IMAGE.delete([img]);
+            await DB.delete('product_images', 'id', rid);
+          }
         }
-      }
 
-      return jsonResponse({ success: true });
+        return jsonResponse({ success: true });
+      } catch (e) {
+        console.error('update product post-update:', e);
+        // Compensación: borrar los objetos R2 nuevos subidos en esta operación
+        for (const k of uploadedKeys) {
+          try { await STORAGE.delete(k); } catch {}
+        }
+        return jsonResponse({ error: 'Error al actualizar el producto' }, 500);
+      }
     } catch (e) {
-      return jsonResponse({ error: e.message || 'Error al actualizar' }, 500);
+      console.error('update product:', e);
+      return jsonResponse({ error: 'Error al actualizar el producto' }, 500);
     }
   }
 
   if (request.method === 'DELETE' && id) {
+    const numId = parseInt(id);
+    if (!Number.isFinite(numId)) return jsonResponse({ error: 'ID inválido' }, 400);
     try {
-      const images = await DB.query('SELECT * FROM product_images WHERE product_id = ?', [parseInt(id)]);
-      // Solo se borran de R2 las imágenes que pertenecen exclusivamente a este
-      // producto (procesadas vía molipa/). Las elegidas de la galería (gallery/)
-      // pueden estar compartidas con otros productos y no deben eliminarse aquí.
+      // Recolectar imágenes propias (molipa/) para borrar de R2 luego del DELETE de DB
+      const images = await DB.query('SELECT * FROM product_images WHERE product_id = ?', [numId]);
       const owned = images.filter(i => (i.original_path || '').startsWith('molipa/'));
-      if (owned.length > 0) await IMAGE.delete(owned);
-      // Limpiar referencias en DB para este producto (incluye las de galería)
-      await DB.delete('product_images', 'product_id', parseInt(id));
-      await DB.delete('products', 'id', parseInt(id));
+
+      // Borrar primero de la DB (atómico). Con PRAGMA foreign_keys=ON, las filas de
+      // product_images y product_presentations se eliminan en cascada, pero las
+      // borramos explícitamente para ser robustos si las FK estuvieran desactivadas.
+      await DB.delete('product_presentations', 'product_id', numId);
+      await DB.delete('product_images', 'product_id', numId);
+      await DB.delete('products', 'id', numId);
+
+      // Luego borrar de R2. Si falla, no afecta la integridad de la DB; quedan
+      // objetos huérfanos en R2 pero no son visibles desde el sitio.
+      if (owned.length > 0) {
+        try { await IMAGE.delete(owned); } catch (e) { console.error('R2 cleanup on delete:', e); }
+      }
+
       return jsonResponse({ success: true });
     } catch (e) {
+      console.error('delete product:', e);
       return jsonResponse({ error: 'Error al eliminar' }, 500);
     }
   }

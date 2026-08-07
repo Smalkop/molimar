@@ -334,6 +334,9 @@ export default {
     if (pathname.startsWith('/media/')) {
       let key = pathname.replace('/media/', '');
       try { key = decodeURIComponent(key); } catch {}
+      if (key.includes('..') || key.startsWith('static/') || key.startsWith('/')) {
+        return new Response('Not Found', { status: 404 });
+      }
       return serveMedia(key, env);
     }
 
