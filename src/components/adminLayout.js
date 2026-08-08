@@ -29,8 +29,7 @@ export function adminLayout({ title, active, content, user, header = 'label' }) 
   <title>${title} | Admin Molipar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{primary:{50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#4f46e5',600:'#0000ba',700:'#00009a',800:'#00007a',900:'#00005a',950:'#00003a'}},fontFamily:{sans:['Inter','system-ui','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="/css/output.css">
   <style>.sidebar-link{transition:all .2s ease}.sidebar-link:hover{background:#eef2ff;color:#0000ba}.form-input{transition:border-color .2s ease,box-shadow .2s ease}.form-input:focus{border-color:#0000ba;box-shadow:0 0 0 3px rgba(0,0,186,.1)}tr[draggable="true"]{cursor:grab}tr[draggable="true"]:active{cursor:grabbing}tr.dragging{opacity:.4}.drop-target{position:relative}</style>
 </head><body class="font-sans bg-gray-50 min-h-screen">
 <div class="flex h-screen overflow-hidden">

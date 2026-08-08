@@ -4,15 +4,16 @@ import { seoMeta } from '../utils/seo.js';
 import { normalizeWhatsApp } from '../utils/html.js';
 import { ANIMATIONS_CSS, ANIMATIONS_JS } from './Assets.js';
 
-export function Layout({ children, title, description, image, url, settings, currentPath, extraHead = '' }) {
+export function Layout({ children, title, description, image, url, settings, currentPath, extraHead = '', siteUrl }) {
   const siteSettings = settings || {};
   const companyName = siteSettings.company_name || 'Molipar S.A.';
+  const siteOrigin = siteUrl || 'https://molipar.com';
   const schemaOrg = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: companyName,
     description: siteSettings.company_description || '',
-    url: 'https://molipar.com',
+    url: siteOrigin,
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: siteSettings.phone || '',
@@ -29,25 +30,12 @@ export function Layout({ children, title, description, image, url, settings, cur
   <meta name="theme-color" content="#0000ba">
   <meta name="color-scheme" content="light">
   <meta name="robots" content="index, follow">
-  ${seoMeta({ title, description, image, url })}
+  ${seoMeta({ title, description, image, path: currentPath, siteUrl: siteOrigin })}
   <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#4f46e5',600:'#0000ba',700:'#00009a',800:'#00007a',900:'#00005a',950:'#00003a' },
-            secondary: { 50:'#f0f7f4',100:'#daede4',200:'#b6dac9',300:'#8bc0a9',400:'#5ea286',500:'#3d856b',600:'#2e6b55',700:'#275645',800:'#224539',900:'#1d3a30',950:'#0e201a' },
-          },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="/css/output.css">
   <style>${ANIMATIONS_CSS}</style>
   <noscript>
     <style>

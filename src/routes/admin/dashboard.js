@@ -1,4 +1,4 @@
-import { htmlResponse } from '../../utils/html.js';
+import { htmlResponse, escapeHtml } from '../../utils/html.js';
 import { adminLayout } from '../../components/adminLayout.js';
 import DB from '../../services/database.js';
 
@@ -37,7 +37,7 @@ export async function handleDashboard(env, user) {
       ${passwordBanner}
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p class="text-gray-500 text-sm mt-1">Bienvenido, ${user.name}</p>
+        <p class="text-gray-500 text-sm mt-1">Bienvenido, ${escapeHtml(user.name || '')}</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -79,8 +79,8 @@ export async function handleDashboard(env, user) {
             <tbody class="divide-y divide-gray-100">
               ${recentProducts.length > 0 ? recentProducts.map(p => `
                 <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 text-sm font-medium text-gray-900">${p.name}</td>
-                  <td class="px-6 py-4 text-sm text-gray-500">${p.type_name}</td>
+                  <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(p.name || '')}</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">${escapeHtml(p.type_name || '')}</td>
                   <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium rounded-full ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${p.status === 'active' ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="px-6 py-4 text-sm text-gray-500">${new Date(p.created_at).toLocaleDateString('es-AR')}</td>
                 </tr>

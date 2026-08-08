@@ -1,5 +1,5 @@
 import { Layout } from '../../components/Layout.js';
-import { htmlResponse, parseJsonField } from '../../utils/html.js';
+import { htmlResponse, parseJsonField, escapeHtml } from '../../utils/html.js';
 
 export async function handleAbout(env, settings) {
   const values = parseJsonField(settings.company_values, []);
@@ -21,7 +21,7 @@ export async function handleAbout(env, settings) {
           <div class="animate-fade-left">
             <h2 class="text-3xl font-bold text-gray-900 mb-6">Nuestra Trayectoria</h2>
             <div class="prose prose-lg text-gray-600 leading-relaxed">
-              <p>${settings.company_history || ''}</p>
+              <p>${escapeHtml(settings.company_history || '')}</p>
             </div>
           </div>
           <div class="animate-fade-right relative">
@@ -47,14 +47,14 @@ export async function handleAbout(env, settings) {
               <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-4">Misión</h3>
-            <p class="text-gray-600 leading-relaxed">${settings.company_mission || ''}</p>
+            <p class="text-gray-600 leading-relaxed">${escapeHtml(settings.company_mission || '')}</p>
           </div>
           <div class="animate-scale-in card-hover bg-white p-10 rounded-2xl shadow-md border-t-4 border-secondary-500" style="transition-delay:0.1s">
             <div class="w-14 h-14 bg-secondary-100 rounded-xl flex items-center justify-center mb-6">
               <svg class="w-7 h-7 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-4">Visión</h3>
-            <p class="text-gray-600 leading-relaxed">${settings.company_vision || ''}</p>
+            <p class="text-gray-600 leading-relaxed">${escapeHtml(settings.company_vision || '')}</p>
           </div>
           <div class="animate-scale-in card-hover bg-white p-10 rounded-2xl shadow-md border-t-4 border-amber-500" style="transition-delay:0.2s">
             <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mb-6">
@@ -71,8 +71,8 @@ export async function handleAbout(env, settings) {
           ${values.map(v => `
             <div class="card-hover bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
               <div class="text-3xl mb-3">${v.icon === 'quality' ? '🏆' : v.icon === 'innovation' ? '💡' : v.icon === 'tradition' ? '🌾' : '🤝'}</div>
-              <h4 class="font-semibold text-gray-900 mb-2">${v.title}</h4>
-              <p class="text-gray-600 text-sm">${v.description}</p>
+              <h4 class="font-semibold text-gray-900 mb-2">${escapeHtml(v.title || '')}</h4>
+              <p class="text-gray-600 text-sm">${escapeHtml(v.description || '')}</p>
             </div>
           `).join('')}
         </div>` : ''}
@@ -87,5 +87,6 @@ export async function handleAbout(env, settings) {
     description: 'Conocé nuestra historia, misión, visión y valores. Molipar S.A. - Tradición en harinas y fideos.',
     settings,
     currentPath: '/nosotros',
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }

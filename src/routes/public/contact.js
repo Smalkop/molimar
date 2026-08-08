@@ -1,5 +1,5 @@
 import { Layout } from '../../components/Layout.js';
-import { htmlResponse, jsonResponse, sanitizeString, normalizeWhatsApp } from '../../utils/html.js';
+import { htmlResponse, jsonResponse, sanitizeString, normalizeWhatsApp, escapeHtml } from '../../utils/html.js';
 import { validateContact } from '../../utils/validators.js';
 import DB from '../../services/database.js';
 
@@ -76,21 +76,21 @@ export async function handleContact(env, settings) {
                     <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
                       <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     </div>
-                    <div><p class="font-medium text-gray-900">Dirección</p><p class="text-gray-600 text-sm mt-1">${settings.address}</p></div>
+                    <div><p class="font-medium text-gray-900">Dirección</p><p class="text-gray-600 text-sm mt-1">${escapeHtml(settings.address || '')}</p></div>
                   </div>` : ''}
                   ${settings.phone ? `
                   <div class="flex items-start space-x-4">
                     <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
                       <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                     </div>
-                    <div><p class="font-medium text-gray-900">Teléfono</p><a href="tel:${settings.phone}" class="text-primary-600 hover:text-primary-700 text-sm mt-1 block">${settings.phone}</a></div>
+                    <div><p class="font-medium text-gray-900">Teléfono</p><a href="tel:${escapeHtml(settings.phone)}" class="text-primary-600 hover:text-primary-700 text-sm mt-1 block">${escapeHtml(settings.phone)}</a></div>
                   </div>` : ''}
                   ${settings.email ? `
                   <div class="flex items-start space-x-4">
                     <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center shrink-0">
                       <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     </div>
-                    <div><p class="font-medium text-gray-900">Email</p><a href="mailto:${settings.email}" class="text-primary-600 hover:text-primary-700 text-sm mt-1 block">${settings.email}</a></div>
+                    <div><p class="font-medium text-gray-900">Email</p><a href="mailto:${escapeHtml(settings.email)}" class="text-primary-600 hover:text-primary-700 text-sm mt-1 block">${escapeHtml(settings.email)}</a></div>
                   </div>` : ''}
                   ${settings.whatsapp ? `
                   <div class="flex items-start space-x-4">
@@ -105,7 +105,7 @@ export async function handleContact(env, settings) {
               ${settings.schedule ? `
               <div class="border-t border-gray-200 pt-8">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Horarios</h3>
-                <p class="text-gray-600 text-sm leading-relaxed">${settings.schedule}</p>
+                <p class="text-gray-600 text-sm leading-relaxed">${escapeHtml(settings.schedule)}</p>
               </div>` : ''}
 
               <div class="border-t border-gray-200 pt-8">
@@ -117,7 +117,7 @@ export async function handleContact(env, settings) {
                     { key: 'linkedin', label: 'LinkedIn', svg: '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>' },
                     { key: 'youtube', label: 'YouTube', svg: '<path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>' },
                   ].map(social => settings[social.key] ? `
-                    <a href="${settings[social.key]}" target="_blank" rel="noopener noreferrer"
+                    <a href="${escapeHtml(settings[social.key])}" target="_blank" rel="noopener noreferrer"
                        class="w-12 h-12 rounded-xl bg-gray-200 hover:bg-primary-600 flex items-center justify-center transition-all hover:scale-110 group" aria-label="${social.label}">
                       <svg class="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">${social.svg}</svg>
                     </a>
@@ -141,9 +141,9 @@ export async function handleContact(env, settings) {
           <iframe
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d-55.7375!3d-25.4167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjXCsDI1JzAwLjAiUyA1NcKwNDQnMTUuMCJX!5e0!3m2!1ses-419!2spy!4v1"
             width="100%" height="400" style="border:0; display: block;"
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts allow-popups"
             allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-            title="Ubicación de Molipar - ${settings.address || 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9)'}">
+            title="Ubicación de Molipar - ${escapeHtml(settings.address || 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9)')}">
           </iframe>
         </div>
         <div class="text-center mt-6">
@@ -208,6 +208,7 @@ export async function handleContact(env, settings) {
     description: 'Contactate con Molipar. Encontranos en nuestra dirección, teléfono, WhatsApp o mediante nuestro formulario de contacto.',
     settings,
     currentPath: '/contacto',
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }
 

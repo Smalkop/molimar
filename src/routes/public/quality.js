@@ -93,5 +93,6 @@ export async function handleQuality(env, settings) {
     description: 'Compromiso con la calidad y controles en la producción de harinas y fideos Molipar.',
     settings,
     currentPath: '/calidad',
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }

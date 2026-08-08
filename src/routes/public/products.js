@@ -113,6 +113,7 @@ export async function handleProducts(env, settings) {
     description: 'Harinas y fideos de la más alta calidad. Conocé nuestra línea completa de productos Molipar.',
     settings,
     currentPath: '/productos',
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }
 
@@ -132,6 +133,7 @@ export async function handleProductDetail(env, settings, slug) {
       title: 'Producto no encontrado',
       settings,
       currentPath: '/productos',
+      siteUrl: env.SITE_URL || 'https://molipar.com',
     }), 404);
   }
 
@@ -156,13 +158,13 @@ export async function handleProductDetail(env, settings, slug) {
           <span class="mx-2">/</span>
           <a href="/productos" class="hover:text-white transition-colors">Productos</a>
           <span class="mx-2">/</span>
-          <span class="text-white">${product.name}</span>
+          <span class="text-white">${escapeHtml(product.name)}</span>
         </nav>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div class="animate-fade-left">
-            <span class="text-primary-400 font-semibold text-sm tracking-wider uppercase">${product.type_name}</span>
-            <h1 class="text-4xl md:text-5xl font-bold text-white mt-3 mb-6">${product.name}</h1>
-            <p class="text-gray-300 text-lg leading-relaxed mb-8">${product.short_description || ''}</p>
+            <span class="text-primary-400 font-semibold text-sm tracking-wider uppercase">${escapeHtml(product.type_name)}</span>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mt-3 mb-6">${escapeHtml(product.name)}</h1>
+            <p class="text-gray-300 text-lg leading-relaxed mb-8">${escapeHtml(product.short_description || '')}</p>
             <div class="flex flex-col sm:flex-row gap-4">
               <a href="https://wa.me/${normalizeWhatsApp(settings.whatsapp) || '595986288006'}?text=${encodeURIComponent('Hola, quiero información sobre ' + product.name + ' de Molipar')}"
                  target="_blank"
@@ -177,7 +179,7 @@ export async function handleProductDetail(env, settings, slug) {
           </div>
           <div class="animate-fade-right">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-2xl bg-gray-800">
-              <img src="${imgUrl(product.main_image)}" alt="${product.name}" class="w-full h-full object-cover card-image" style="object-position:${product.crop_x || 50}% ${product.crop_y || 50}%" data-lightbox="${imgUrl(product.main_image)}">
+              <img src="${imgUrl(product.main_image)}" alt="${escapeHtml(product.name)}" class="w-full h-full object-cover card-image" style="object-position:${product.crop_x || 50}% ${product.crop_y || 50}%" data-lightbox="${imgUrl(product.main_image)}">
             </div>
           </div>
         </div>
@@ -271,6 +273,7 @@ export async function handleProductDetail(env, settings, slug) {
     description: product.short_description || '',
     image: imgUrl(product.main_image) || undefined,
     settings,
-    currentPath: '/productos',
+    currentPath: `/productos/${product.slug}`,
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }

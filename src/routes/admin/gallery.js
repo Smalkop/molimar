@@ -356,7 +356,7 @@ export function galleryPickerHTML() {
         grid.innerHTML = pickerImages.map(img => {
           const checked = pickerSelected.has(img.key);
           return \`
-            <div class="relative cursor-pointer group" onclick="togglePickerImage('\${escapeJs(img.key)}', this)">
+            <div class="relative cursor-pointer group" onclick="togglePickerImage(\${escapeJs(img.key)}, this)">
               <div class="aspect-square rounded-lg overflow-hidden border-2 transition-all \${checked ? 'border-primary-600 ring-2 ring-primary-200' : 'border-transparent hover:border-primary-300'}">
                 <img src="/media/\${encodeURIComponent(img.key)}" alt="" loading="lazy" class="w-full h-full object-cover">
               </div>
@@ -396,9 +396,10 @@ export function galleryPickerHTML() {
         closeGalleryPicker();
       }
 
-      function escapeJs(s) {
-        return String(s).replace(/'/g, "\\\\'").replace(/"/g, '"');
+      function jsStr(s) {
+        return JSON.stringify(String(s == null ? '' : s));
       }
+      function escapeJs(s) { return jsStr(s); }
     </script>
   `;
 }

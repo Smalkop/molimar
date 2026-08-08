@@ -71,5 +71,6 @@ export async function handleDirectSales(env, settings) {
     description: 'Venta directa de harinas Molipar. Contactá con nuestro equipo de ventas por zona para atención personalizada en todo Paraguay.',
     settings,
     currentPath: '/venta-directa',
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }

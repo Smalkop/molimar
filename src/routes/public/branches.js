@@ -121,5 +121,6 @@ export async function handleBranches(env, settings) {
     description: 'Conocé todos los centros de distribución de Molipar en Paraguay. Planta Central y puntos de venta con atención personalizada.',
     settings,
     currentPath: '/sucursales',
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }

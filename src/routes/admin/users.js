@@ -1,4 +1,4 @@
-import { htmlResponse, jsonResponse, sanitizeString } from '../../utils/html.js';
+import { htmlResponse, jsonResponse, sanitizeString, escapeHtml } from '../../utils/html.js';
 import { adminLayout } from '../../components/adminLayout.js';
 import DB from '../../services/database.js';
 import AUTH from '../../services/auth.js';
@@ -37,12 +37,12 @@ export async function handleAdminUsers(env, user) {
             <tbody class="divide-y divide-gray-100">
               ${users.map(u => `
                 <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 text-sm font-medium text-gray-900">${u.name}</td>
-                  <td class="px-6 py-4 text-sm text-gray-500">${u.email}</td>
-                  <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">${u.role}</span></td>
+                  <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(u.name || '')}</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">${escapeHtml(u.email || '')}</td>
+                  <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">${escapeHtml(u.role || '')}</span></td>
                   <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium rounded-full ${u.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${u.active ? 'Activo' : 'Inactivo'}</span></td>
                   <td class="px-6 py-4 flex items-center space-x-1">
-                    <button onclick="editUser(this)" data-id="${u.id}" data-name="${u.name}" data-email="${u.email}" data-role="${u.role}" class="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-all" title="Editar">
+                    <button onclick="editUser(this)" data-id="${u.id}" data-name="${escapeHtml(u.name || '')}" data-email="${escapeHtml(u.email || '')}" data-role="${escapeHtml(u.role || '')}" class="p-2 text-gray-400 hover:text-primary-600 rounded-lg transition-all" title="Editar">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     </button>
                     <button onclick="deleteUser(${u.id})" class="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-all" title="Eliminar usuario">

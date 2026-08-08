@@ -67,5 +67,6 @@ export async function handleHome(env, settings) {
     settings,
     currentPath: '/',
     extraHead,
+    siteUrl: env.SITE_URL || 'https://molipar.com',
   }));
 }
