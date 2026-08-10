@@ -35,53 +35,22 @@ export async function handleQuality(env, settings) {
               <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
             <h3 class="text-lg font-bold text-gray-900 mb-3">Control de Materia Prima</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">Seleccionamos y analizamos cada lote de trigo para garantizar su pureza, humedad y contenido proteico óptimo.</p>
+            <p class="text-gray-600 text-sm leading-relaxed">Seleccionamos trigo de calidad para garantizar su pureza, humedad y contenido proteico óptimo.</p>
           </div>
           <div class="card-hover bg-gray-50 p-8 rounded-2xl">
             <div class="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mb-5">
               <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
             </div>
-            <h3 class="text-lg font-bold text-gray-900 mb-3">Tecnología Aplicada</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">Molinos automatizados con sistemas de control digital que permiten ajustar precisamente cada parámetro de molienda.</p>
+            <h3 class="text-lg font-bold text-gray-900 mb-3">Control de calidad</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">Contamos con personas con experiencia, comprometidas con garantizar la calidad de nuestros productos en cada etapa del proceso.</p>
           </div>
           <div class="card-hover bg-gray-50 p-8 rounded-2xl">
             <div class="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mb-5">
               <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </div>
             <h3 class="text-lg font-bold text-gray-900 mb-3">Laboratorio Propio</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">Contamos con laboratorio equipado para realizar análisis físicos, químicos y microbiológicos de cada producción.</p>
+            <p class="text-gray-600 text-sm leading-relaxed">Contamos con controles de calidad para garantizar la seguridad y calidad de nuestros productos.</p>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Controles de Calidad -->
-    <section class="py-20 bg-white">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 animate-on-scroll">
-          <span class="text-primary-600 font-semibold text-sm tracking-wider uppercase">Control</span>
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-3">Controles de Calidad</h2>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          ${[
-            { title: 'Análisis Físico', items: ['Granulometría', 'Humedad', 'Cenizas', 'Color', 'Gluten'] },
-            { title: 'Análisis Químico', items: ['Proteína', 'Fibra', 'Carbohidratos', 'Grasas', 'Vitaminas'] },
-            { title: 'Análisis Microbiológico', items: ['Recuento de bacterias', 'Hongos y levaduras', 'Salmonella', 'E. coli', 'Aflatoxinas'] },
-            { title: 'Análisis Sensorial', items: ['Sabor', 'Aroma', 'Textura', 'Apariencia', 'Color'] },
-          ].map(control => `
-            <div class="animate-scale-in card-hover bg-gray-50 p-8 rounded-2xl">
-              <h3 class="text-lg font-bold text-gray-900 mb-5">${control.title}</h3>
-              <ul class="space-y-3">
-                ${control.items.map(item => `
-                  <li class="flex items-center text-gray-600">
-                    <svg class="w-5 h-5 text-green-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    ${item}
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-          `).join('')}
         </div>
       </div>
     </section>
