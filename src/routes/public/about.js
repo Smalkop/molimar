@@ -1,8 +1,13 @@
 import { Layout } from '../../components/Layout.js';
-import { htmlResponse, parseJsonField, escapeHtml } from '../../utils/html.js';
+import { htmlResponse, escapeHtml } from '../../utils/html.js';
 
 export async function handleAbout(env, settings) {
-  const values = parseJsonField(settings.company_values, []);
+  const values = [
+    { icon: 'quality', title: 'Calidad', description: 'Nos comprometemos a ofrecer productos de calidad' },
+    { icon: 'innovation', title: 'Innovación', description: 'Buscamos mejorar constantemente nuestros procesos y productos' },
+    { icon: 'tradition', title: 'Tradición', description: 'Valoramos nuestra historia y la experiencia que nos acompaña' },
+    { icon: 'responsibility', title: 'Responsabilidad', description: 'Trabajamos con compromiso por nuestros colaboradores, clientes y comunidad' },
+  ];
 
   const content = `
     <!-- Hero -->
