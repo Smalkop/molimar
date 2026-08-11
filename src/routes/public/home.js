@@ -57,7 +57,7 @@ export async function handleHome(env, settings) {
       window.__FIDEOS__ = ${jsonToScript(fideos)};
       window.__WHATSAPP__ = ${jsonToScript(normalizeWhatsApp(settings.whatsapp) || '595986288006')};
     </script>
-    <script src="/js/homepage.bundle.js" defer></script>
+    <script src="${(env && env.HOME_BUNDLE) || '/js/homepage.bundle.js'}" defer></script>
   `;
 
   return htmlResponse(Layout({

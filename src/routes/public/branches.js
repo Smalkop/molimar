@@ -1,5 +1,5 @@
 import { Layout } from '../../components/Layout.js';
-import { htmlResponse } from '../../utils/html.js';
+import { htmlResponse, escapeHtml } from '../../utils/html.js';
 
 const branches = [
   {
@@ -35,18 +35,23 @@ const branches = [
     name: 'Pedro Juan Caballero',
     location: 'Pedro Juan Caballero',
     address: 'Gral. Diaz Calle Elisa Alicia Lynch',
-    phone: '+595 985 470 060 / +595 972 413 939',
+    phone: '+595 985 470 060',
+    secondaryPhone: '+595 972 413 939',
     map: 'https://maps.app.goo.gl/1doApqDaZkmQnQhNA',
   },
 ];
 
+function primaryPhone(phone) {
+  return String(phone || '').split('/')[0];
+}
+
 function phoneLink(phone) {
-  const digits = phone.replace(/\D/g, '');
+  const digits = primaryPhone(phone).replace(/\D/g, '');
   return `tel:+${digits}`;
 }
 
 function phoneWhatsApp(phone) {
-  const digits = phone.replace(/\D/g, '');
+  const digits = primaryPhone(phone).replace(/\D/g, '');
   return `https://wa.me/${digits}`;
 }
 
@@ -82,6 +87,13 @@ export async function handleBranches(env, settings) {
                 </div>
 
                 <p class="text-gray-600 text-sm mb-4 pl-16">${b.address}</p>
+
+                ${b.secondaryPhone ? `
+                  <p class="text-gray-600 text-sm mb-4 pl-16">
+                    Otras líneas:
+                    <a href="${phoneLink(b.secondaryPhone)}" class="text-primary-600 hover:text-primary-700">${escapeHtml(b.secondaryPhone)}</a>
+                  </p>
+                ` : ''}
 
                 <div class="flex flex-wrap gap-3 pl-16">
                   <a href="${b.map}" target="_blank" rel="noopener noreferrer"

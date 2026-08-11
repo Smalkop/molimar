@@ -1,4 +1,4 @@
-import { htmlResponse, jsonResponse, sanitizeString, escapeHtml, normalizeWhatsApp } from '../../utils/html.js';
+import { htmlResponse, jsonResponse, escapeHtml, normalizeWhatsApp } from '../../utils/html.js';
 import { adminLayout } from '../../components/adminLayout.js';
 import DB from '../../services/database.js';
 
@@ -156,7 +156,14 @@ export async function handleAdminSettingsApi(request, env, user) {
       return 'general';
     };
     for (const [key, value] of Object.entries(data)) {
-      const val = key === 'whatsapp' ? normalizeWhatsApp(String(value)) : sanitizeString(String(value));
+      // Se guarda el valor crudo (solo trim); el escape se aplica en el output
+      // (escapeHtml/escAttr). Codificar entidades aca rompe URLs (ej. redes sociales).
+      let val = String(value).trim();
+      if (key === 'whatsapp') {
+        val = normalizeWhatsApp(value);
+      } else if (['facebook', 'instagram', 'linkedin', 'youtube'].includes(key) && val && !/^https?:\/\//i.test(val)) {
+        return jsonResponse({ error: `La URL de ${key} debe comenzar con http:// o https://` }, 400);
+      }
       const existing = await DB.get('SELECT id, setting_group FROM site_settings WHERE setting_key = ?', [key]);
       if (existing) {
         await DB.run('UPDATE site_settings SET setting_value = ?, updated_at = datetime(\'now\') WHERE setting_key = ?', [val, key]);

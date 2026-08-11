@@ -328,15 +328,15 @@ function HeroSection({ settings: s }) {
       >
         <motion.div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/images/hero-bg.webp')" }}
+          style={{ backgroundImage: "url('/images/hero-bg-2026.webp')", filter: 'brightness(1.05) saturate(1.1)' }}
           animate={
             prefersReducedMotion
               ? {}
               : { scale: [1, 1.08, 1], transition: { duration: 22, repeat: Infinity, ease: 'linear' } }
           }
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
       </motion.div>
 
       {/* Contenido */}
@@ -364,7 +364,7 @@ function HeroSection({ settings: s }) {
             initial="hidden"
             animate="visible"
             className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6"
-            style={{ willChange: 'clip-path' }}
+            style={{ willChange: 'clip-path', textShadow: '0 2px 14px rgba(0,0,0,0.45)' }}
           >
             {titleWords.map((w, i) => (
               w.trim() === '' ? (
@@ -385,6 +385,7 @@ function HeroSection({ settings: s }) {
             initial="hidden"
             animate="visible"
             className="text-lg md:text-xl text-gray-300 mb-10 leading-relaxed"
+            style={{ textShadow: '0 1px 10px rgba(0,0,0,0.4)' }}
           >
             {s.hero_subtitle || 'Producimos harinas y fideos con los más altos estándares de calidad.'}
           </motion.p>
@@ -464,8 +465,8 @@ function Homepage() {
               </a>
             </motion.div>
             <motion.div variants={fadeRight} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="relative">
-              <div className="aspect-w-1 aspect-h-1 rounded-2xl overflow-hidden shadow-2xl">
-                <img src="/images/about-preview.webp" alt="Molipar S.A." className="w-full h-full object-cover" style={{ objectPosition: 'center' }} loading="lazy" />
+              <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl">
+                <img src="/images/about-molipar-2026.jpg" alt="Molipar S.A." className="w-full h-full object-cover" style={{ objectPosition: 'center' }} loading="lazy" />
               </div>
               <motion.div variants={scaleFade} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.3 }}
                 className="absolute -bottom-6 -left-6 bg-primary-600 text-white p-8 rounded-2xl shadow-xl hidden lg:block">

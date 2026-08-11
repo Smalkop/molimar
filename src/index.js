@@ -214,6 +214,22 @@ async function ensureDatabase(env) {
     } catch {}
   }
 
+  // Reparar valores de site_settings guardados con entidades HTML (sanitizeString
+  // antiguo codificaba '/', '&', etc. y rompia URLs como las de redes sociales).
+  // Idempotente: solo actua sobre filas que aun contengan '&#x2F;'.
+  try {
+    const legacyRows = await env.DB.prepare("SELECT id, setting_value FROM site_settings WHERE setting_value LIKE '%&#x2F;%'").all();
+    for (const row of (legacyRows.results || legacyRows)) {
+      let fixed = row.setting_value;
+      for (const [entity, char] of [['&#x2F;', '/'], ['&lt;', '<'], ['&gt;', '>'], ['&quot;', '"'], ['&#x27;', "'"], ['&amp;', '&']]) {
+        fixed = fixed.split(entity).join(char);
+      }
+      if (fixed !== row.setting_value) {
+        await env.DB.prepare("UPDATE site_settings SET setting_value = ?, updated_at = datetime('now') WHERE id = ?").bind(fixed, row.id).all();
+      }
+    }
+  } catch (e) { console.error('Error repairing legacy settings:', e); }
+
   // Setear descripción del tipo "Fideos" (idempotente)
   try {
     await env.DB.prepare("UPDATE product_types SET description = ? WHERE slug = 'fideos'").bind('Fideos elaborados con la mejor calidad de Molipar').all();
@@ -322,6 +338,10 @@ export default {
     if (pathname.startsWith('/images/') || pathname.startsWith('/css/') || pathname.startsWith('/js/')) {
       let key = pathname.slice(1);
       try { key = decodeURIComponent(key); } catch {}
+      // Modo preview: se sirve la CSS de preview para no alterar los estilos de producción.
+      if (env.HOME_BUNDLE && key === 'css/output.css') {
+        key = 'css/output.preview.css';
+      }
       return serveStatic(key, env);
     }
 

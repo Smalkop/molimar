@@ -20,22 +20,35 @@ export async function requireAdmin(request, env) {
 
 // CSRF defense: validate Origin/Referer matches the site origin.
 // Returns true if the request is safe; false if it should be rejected.
+// Se acepta tanto el origen configurado (SITE_URL) como el origen real desde
+// el que se sirve la request (request.url), para que funcione en local y en
+// cualquier dominio (dominio propio, preview, www, etc.) sin debilitar la
+// protección: el navegador no permite forjar el Origin de una request cross-site.
 export function checkSameOrigin(request, env) {
   const method = request.method.toUpperCase();
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return true;
 
-  const siteUrl = (env && env.SITE_URL) || '';
-  if (!siteUrl) return true;
+  const allowed = new Set();
+
+  try {
+    const reqUrl = new URL(request.url);
+    allowed.add(`${reqUrl.protocol}//${reqUrl.host}`.replace(/\/$/, ''));
+  } catch {}
+
+  if (env && env.SITE_URL) {
+    allowed.add(env.SITE_URL.replace(/\/$/, ''));
+  }
+
+  if (allowed.size === 0) return true;
 
   const origin = request.headers.get('Origin') || '';
   const referer = request.headers.get('Referer') || '';
-  const allowed = siteUrl.replace(/\/$/, '');
 
-  if (origin) return origin.replace(/\/$/, '') === allowed;
+  if (origin) return allowed.has(origin.replace(/\/$/, ''));
   if (referer) {
     try {
       const u = new URL(referer);
-      return `${u.protocol}//${u.host}` === allowed;
+      return allowed.has(`${u.protocol}//${u.host}`);
     } catch {
       return false;
     }

@@ -17,10 +17,9 @@ export async function handleQuality(env, settings) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
           <div class="animate-fade-left">
-            <span class="text-primary-600 font-semibold text-sm tracking-wider uppercase">Procesos</span>
-            <h2 class="text-3xl font-bold text-gray-900 mt-3 mb-6">Procesos de Fabricación</h2>
-            <p class="text-gray-600 leading-relaxed mb-4">Nuestro proceso productivo integra tecnología de punta con prácticas tradicionales de molienda, garantizando la máxima calidad en cada lote.</p>
-            <p class="text-gray-600 leading-relaxed">Desde la recepción del trigo hasta el empaque final, cada etapa es monitoreada y controlada para asegurar la trazabilidad y la excelencia del producto.</p>
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Proceso Productivo</h2>
+            <p class="text-gray-600 leading-relaxed mb-4"><strong>Calidad en cada etapa:</strong> en Molipar cuidamos cada etapa de nuestro proceso productivo, desde la selección y recepción del trigo hasta el envasado final.</p>
+            <p class="text-gray-600 leading-relaxed">Trabajamos con controles constantes para garantizar la calidad, seguridad y uniformidad de nuestros productos, llevando a tu mesa harinas en las que podés confiar.</p>
           </div>
           <div class="animate-fade-right">
             <div class="aspect-w-4 aspect-h-3 rounded-2xl overflow-hidden shadow-xl">
