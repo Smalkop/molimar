@@ -7,7 +7,7 @@ const branches = [
     location: 'Dr. Juan Eulogio Estigarribia',
     address: 'Ruta Py 02 Km 213, Campo 9',
     phone: '+595 986 288006',
-    map: 'https://maps.app.goo.gl/ncibsNiTsyne2TpP6',
+    map: 'https://www.google.com/maps/place/25%C2%B022\'43.2%22S+55%C2%B043\'08.0%22W/@-25.378662,-55.7214498,17z/data=!3m1!4b1!4m4!3m3!8m2!3d-25.378662!4d-55.7188749?hl=es',
     isMain: true,
   },
   {

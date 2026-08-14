@@ -139,15 +139,15 @@ export async function handleContact(env, settings) {
         </div>
         <div class="animate-scale-in rounded-2xl overflow-hidden shadow-lg border border-gray-200">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d-55.7375!3d-25.4167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjXCsDI1JzAwLjAiUyA1NcKwNDQnMTUuMCJX!5e0!3m2!1ses-419!2spy!4v1"
+            src="https://maps.google.com/maps?q=-25.378662,-55.7188749&z=17&hl=es&output=embed"
             width="100%" height="400" style="border:0; display: block;"
-            sandbox="allow-scripts allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-popups"
             allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
             title="Ubicación de Molipar - ${escapeHtml(settings.address || 'Ruta PY02 Km 211,5 - J.E. Estigarribia (Campo 9)')}">
           </iframe>
         </div>
         <div class="text-center mt-6">
-          <a href="https://maps.app.goo.gl/ncibsNiTsyne2TpP6" target="_blank" rel="noopener noreferrer"
+          <a href="https://www.google.com/maps/place/25%C2%B022'43.2%22S+55%C2%B043'08.0%22W/@-25.378662,-55.7214498,17z/data=!3m1!4b1!4m4!3m3!8m2!3d-25.378662!4d-55.7188749?hl=es" target="_blank" rel="noopener noreferrer"
              class="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium transition-colors">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
