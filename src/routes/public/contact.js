@@ -139,7 +139,7 @@ export async function handleContact(env, settings) {
         </div>
         <div class="animate-scale-in rounded-2xl overflow-hidden shadow-lg border border-gray-200">
           <iframe
-            src="https://maps.google.com/maps?q=-25.378662,-55.7188749&z=17&hl=es&output=embed"
+            src="https://www.google.com/maps?q=-25.378662,-55.7188749&z=17&hl=es&output=embed"
             width="100%" height="400" style="border:0; display: block;"
             sandbox="allow-scripts allow-same-origin allow-popups"
             allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
