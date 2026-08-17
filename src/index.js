@@ -74,6 +74,7 @@ INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) 
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('instagram', 'https://instagram.com/molipar', 'social');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('linkedin', 'https://linkedin.com/company/molipar', 'social');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('youtube', 'https://youtube.com/@molipar', 'social');
+INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('tiktok', 'https://tiktok.com/@molipar', 'social');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('schedule', 'Lunes a Viernes: 8:00 - 18:00 hs | Sábados: 8:00 - 13:00 hs', 'contact');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('hero_title', 'La calidad del trigo, el sabor de siempre', 'home');
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value, setting_group) VALUES ('hero_subtitle', 'Producimos harinas y fideos con los más altos estándares de calidad, llevando tradición y sabor a tu mesa.', 'home');

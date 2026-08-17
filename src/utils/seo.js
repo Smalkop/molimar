@@ -64,6 +64,7 @@ export function schemaOrganization(data, siteUrl = 'https://molipar.com') {
       data.instagram,
       data.linkedin,
       data.youtube,
+      data.tiktok,
     ].filter(Boolean),
   };
 }

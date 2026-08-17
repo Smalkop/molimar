@@ -75,7 +75,7 @@ export async function handleAdminSettings(env, user) {
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-6">Redes Sociales</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            ${['facebook', 'instagram', 'linkedin', 'youtube'].map(key => `
+            ${['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok'].map(key => `
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1 capitalize">${key}</label>
                 <input type="url" name="${key}" value="${escapeHtml(s[key] || '')}" placeholder="https://${key}.com/..." class="form-input w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none text-sm">
@@ -151,7 +151,7 @@ export async function handleAdminSettingsApi(request, env, user) {
     const groupForKey = (key) => {
       if (key.startsWith('hero_') || key.startsWith('experience_')) return 'home';
       if (key.startsWith('company_')) return 'company';
-      if (['facebook', 'instagram', 'linkedin', 'youtube'].includes(key)) return 'social';
+      if (['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok'].includes(key)) return 'social';
       if (['address', 'phone', 'whatsapp', 'email', 'schedule'].includes(key)) return 'contact';
       return 'general';
     };
@@ -161,7 +161,7 @@ export async function handleAdminSettingsApi(request, env, user) {
       let val = String(value).trim();
       if (key === 'whatsapp') {
         val = normalizeWhatsApp(value);
-      } else if (['facebook', 'instagram', 'linkedin', 'youtube'].includes(key) && val && !/^https?:\/\//i.test(val)) {
+      } else if (['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok'].includes(key) && val && !/^https?:\/\//i.test(val)) {
         return jsonResponse({ error: `La URL de ${key} debe comenzar con http:// o https://` }, 400);
       }
       const existing = await DB.get('SELECT id, setting_group FROM site_settings WHERE setting_key = ?', [key]);
